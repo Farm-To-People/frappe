@@ -126,6 +126,18 @@ def handle():
 					data.update({
 						"doctype": doctype
 					})
+
+					# Brian: I just cannot believe I'm fixing this.
+					if 'name' in data:
+						try:
+							doc = frappe.get_doc(doctype, data['name'])
+							# print("--- Welcome to Thunderdome! ---")
+							raise frappe.NameError(f"Record with name '{data['name']}' already exists.")
+						except frappe.DoesNotExistError:
+							frappe.local.response.pop('exc_type')  # clear the exception
+							pass
+					# end of super-critical fix.
+
 					frappe.local.response.update({
 						"data": frappe.get_doc(data).insert().as_dict()
 					})
