@@ -1130,6 +1130,10 @@ def make_module_and_roles(doc, perm_fieldname="permissions"):
 				r = frappe.get_doc(dict(doctype= "Role", role_name=role, desk_access=1))
 				r.flags.ignore_mandatory = r.flags.ignore_permissions = True
 				r.insert()
+	# FTP: This helps when you rename Modules, and not everything is clenaed up.
+	except KeyError as e:
+		print(f"Key error for doc '{doc}', module '{doc.module}', app '{m.app_name}'")
+		raise e
 	except frappe.DoesNotExistError as e:
 		pass
 	except frappe.db.ProgrammingError as e:

@@ -70,14 +70,19 @@ def get_data(module, build=True):
 				# First disable based on exists of depends_on list
 				doctype = item.get("doctype")
 				dependencies = item.get("dependencies") or None
-				if not dependencies and doctype:
-					item["dependencies"] = [doctype]
+
+				# Brian: This doesn't make any sense.  It means on Desk, you cannot open a DocType
+				# until the DocType has at least 1 record.  Catch 22.  Commenting out these 2 lines.
+				#if not dependencies and doctype:
+					#item["dependencies"] = [doctype]
 
 				dependencies = item.get("dependencies")
 				if dependencies:
 					incomplete_dependencies = [d for d in dependencies if not doctype_contains_a_record(d)]
 					if len(incomplete_dependencies):
 						item["incomplete_dependencies"] = incomplete_dependencies
+					else:
+						item["incomplete_dependencies"] = ""  # https://github.com/frappe/frappe/issues/11168
 
 				if item.get("onboard"):
 					# Mark Spotlights for initial
