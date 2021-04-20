@@ -383,7 +383,8 @@ class BaseDocument(object):
 			if df:
 				label = df.label
 
-			frappe.msgprint(_("{0} must be unique".format(label or fieldname)))
+			# Farm to People: Trying to improve on the error message.
+			frappe.msgprint(_("Constraint '{0}' requires unique values".format(label or fieldname)))
 
 		# this is used to preserve traceback
 		raise frappe.UniqueValidationError(self.doctype, self.name, e)

@@ -96,8 +96,9 @@ class Report(Document):
 		if not self.query:
 			frappe.throw(_("Must specify a Query to run"), title=_('Report Document Error'))
 
-		if not self.query.lower().startswith("select"):
-			frappe.throw(_("Query must be a SELECT"), title=_('Report Document Error'))
+		# Brian, let's allow some CTEs
+		if (not self.query.lower().startswith("with")) and (not self.query.lower().startswith("select")):
+			frappe.throw(_("Query must be a SELECT or WITH"), title=_('Report Document Error'))
 
 		result = [list(t) for t in frappe.db.sql(self.query, filters)]
 		columns = [cstr(c[0]) for c in frappe.db.get_description()]
