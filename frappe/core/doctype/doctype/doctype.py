@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import re, copy, os, shutil
 import json
+import pathlib
 
 # imports - third party imports
 import six
@@ -402,7 +403,14 @@ class DocType(Document):
 		# move files
 		new_path = get_doc_path(self.module, 'doctype', new)
 		old_path = get_doc_path(self.module, 'doctype', old)
-		shutil.move(old_path, new_path)
+
+		new_path = pathlib.Path(new_path)
+		old_path = pathlib.Path(old_path)
+
+		# Brian: This seems to help when race conditions mess things up.
+		if (old_path.exists()) and (not new_path.exists()):
+			print(f"Moving directory '{old_path}' to '{new_path}'")
+			shutil.move(old_path, new_path)
 
 		# rename files
 		for fname in os.listdir(new_path):
