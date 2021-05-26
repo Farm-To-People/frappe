@@ -44,7 +44,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Address Type",
-   "options": "Billing\nShipping\nOffice\nPersonal\nPlant\nPostal\nShop\nSubsidiary\nWarehouse\nCurrent\nPermanent\nOther",
+   "options": "Billing\nShipping\nOffice\nResidence\nWarehouse\nOther\nRemit To\nDNU (Do Not Use)",
    "reqd": 1
   },
   {
@@ -89,9 +89,8 @@
   },
   {
    "fieldname": "pincode",
-   "fieldtype": "Link",
-   "label": "Postal Code",
-   "options": "Postal Code",
+   "fieldtype": "Data",
+   "label": "Zip Code",
    "search_index": 1
   },
   {
@@ -154,7 +153,7 @@
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
- "modified": "2021-04-02 17:25:40.755926",
+ "modified": "2021-05-22 12:19:46.763628",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
