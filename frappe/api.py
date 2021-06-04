@@ -124,6 +124,17 @@ def handle():
 					data.update({
 						"doctype": doctype
 					})
+					# Farm To People, Datahenge
+					# I cannot believe this isn't standard code.
+					# On POST, if a 'name' is passed, but the record already exists?  ERROR OUT!
+					if 'name' in data:
+						try:
+							doc = frappe.get_doc(doctype, data['name'])
+							raise frappe.NameError(f"Record with name '{data['name']}' already exists.")
+						except frappe.DoesNotExistError:
+							frappe.local.response.pop('exc_type')  # clear the exception
+							pass
+					# end of very-critical fix.
 					frappe.local.response.update({
 						"data": frappe.get_doc(data).insert().as_dict()
 					})

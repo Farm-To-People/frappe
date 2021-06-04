@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import re, copy, os, shutil
 import json
+import pathlib  # Farm To People
 from frappe.cache_manager import clear_user_cache, clear_controller_cache
 
 # imports - third party imports
@@ -420,7 +421,15 @@ class DocType(Document):
 		# move files
 		new_path = get_doc_path(self.module, 'doctype', new)
 		old_path = get_doc_path(self.module, 'doctype', old)
-		shutil.move(old_path, new_path)
+
+		# Farm To People (via Datahenge)
+		# Brian: This extra validation helps resolve issues that felt like race conditions.
+		new_path = pathlib.Path(new_path)
+		old_path = pathlib.Path(old_path)
+		if (old_path.exists()) and (not new_path.exists()):
+			print(f"Moving directory '{old_path}' to '{new_path}'")
+			shutil.move(old_path, new_path)
+		# EOM
 
 		# rename files
 		for fname in os.listdir(new_path):
@@ -1215,6 +1224,11 @@ def make_module_and_roles(doc, perm_fieldname="permissions"):
 				r = frappe.get_doc(dict(doctype= "Role", role_name=role, desk_access=1))
 				r.flags.ignore_mandatory = r.flags.ignore_permissions = True
 				r.insert()
+	# FTP: This helps when you rename Modules, and not everything is clenaed up.
+	except KeyError as e:
+		print(f"Key error for doc '{doc}', module '{doc.module}', app '{m.app_name}'")
+		raise e
+	# EOM
 	except frappe.DoesNotExistError as e:
 		pass
 	except frappe.db.ProgrammingError as e:

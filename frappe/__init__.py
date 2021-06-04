@@ -585,7 +585,9 @@ def is_whitelisted(method):
 
 	is_guest = session['user'] == 'Guest'
 	if method not in whitelisted or is_guest and method not in guest_methods:
-		throw(_("Not permitted"), PermissionError)
+		# Datahenge: Improving on Frappe's very-terse error message.
+		throw(_("Call to function not permitted (function is not safelisted, or allowed for Guest)"), PermissionError)
+		# EOM
 
 	if is_guest and method not in xss_safe_methods:
 		# strictly sanitize form_dict
@@ -1173,7 +1175,7 @@ def get_newargs(fn, kwargs):
 		fnargs = fn.fnargs
 	else:
 		try:
-			fnargs, varargs, varkw, defaults = inspect.getargspec(fn)
+			fnargs, varargs, varkw, defaults = inspect.getfullargspec(fn)  # should be fixed in future v13
 		except ValueError:
 			fnargs = inspect.getfullargspec(fn).args
 			varargs = inspect.getfullargspec(fn).varargs

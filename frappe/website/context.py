@@ -52,7 +52,8 @@ def update_controller_context(context, controller):
 		if hasattr(module, "get_context"):
 			import inspect
 			try:
-				if inspect.getargspec(module.get_context).args:
+				# Brian: This should be resolved in a future v13 patch
+				if inspect.getfullargspec(module.get_context).args:
 					ret = module.get_context(context)
 				else:
 					ret = module.get_context()

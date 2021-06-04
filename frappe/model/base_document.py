@@ -430,7 +430,8 @@ class BaseDocument(object):
 
 			label = self.get_label_from_fieldname(fieldname)
 
-			frappe.msgprint(_("{0} must be unique").format(label or fieldname))
+			# Datahenge: Slight improvement on the error message text.
+			frappe.msgprint(_("Constraint '{0}' requires unique values".format(label or fieldname)))
 
 		# this is used to preserve traceback
 		raise frappe.UniqueValidationError(self.doctype, self.name, e)

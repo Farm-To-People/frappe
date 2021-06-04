@@ -229,7 +229,7 @@ def run_doc_method(method, docs=None, dt=None, dn=None, arg=None, args=None):
 	is_valid_http_method(fn)
 
 	try:
-		fnargs = inspect.getargspec(method_obj)[0]
+		fnargs = inspect.getfullargspec(method_obj)[0]  # should be fixed in future v13
 	except ValueError:
 		fnargs = inspect.getfullargspec(method_obj).args
 

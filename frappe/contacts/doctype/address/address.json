@@ -44,7 +44,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Address Type",
-   "options": "Billing\nShipping\nOffice\nPersonal\nPlant\nPostal\nShop\nSubsidiary\nWarehouse\nCurrent\nPermanent\nOther",
+   "options": "Billing\nShipping\nOffice\nResidence\nWarehouse\nOther\nRemit To\nDNU (Do Not Use)",
    "reqd": 1
   },
   {
@@ -148,7 +148,7 @@
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2020-10-21 16:14:37.284830",
+ "modified": "2021-06-01 16:14:37.284830",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
