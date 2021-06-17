@@ -55,7 +55,7 @@ def execute_cmd(cmd, from_async=False):
 	try:
 		method = get_attr(cmd)
 	except Exception as e:
-		frappe.throw(_('Invalid Method'))
+		frappe.throw(_('Invalid Method: {0}').format(e))
 
 	if from_async:
 		method = method.queue

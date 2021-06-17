@@ -178,7 +178,8 @@ frappe.ui.form.Dashboard = class FormDashboard {
 				return;
 			}
 			this.render_links();
-			this.set_open_count();
+			// Farm To People: Performance Improvement
+			// this.set_open_count();
 			show = true;
 		}
 

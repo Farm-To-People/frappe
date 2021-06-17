@@ -109,7 +109,8 @@ $.extend(frappe.meta, {
 		var fields = $.map(frappe.meta.get_docfields(doctype, name), function(df) {
 			return (df.fieldtype==="Link" && df.ignore_user_permissions!==1) ? df : null;
 		});
-		fields = fields.concat({label: "Name", fieldname: name, options: doctype});
+		// Farm to People
+		fields = fields.concat({label: "ID", fieldname: name, options: doctype});
 		return fields;
 	},
 
@@ -175,13 +176,14 @@ $.extend(frappe.meta, {
 		return df[0].fieldname;
 	},
 
+	// Farm To People:  Display 'name' as 'ID'
 	get_label: function(dt, fn, dn) {
 		var standard = {
 			'owner': __('Owner'),
 			'creation': __('Created On'),
 			'modified': __('Last Modified On'),
 			'idx': __('Idx'),
-			'name': __('Name'),
+			'name': __('ID'),
 			'modified_by': __('Last Modified By')
 		}
 		if(standard[fn]) {
