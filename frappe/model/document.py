@@ -1362,6 +1362,10 @@ class Document(BaseDocument):
 
 		return f"{doctype}({name})"
 
+	def get_parent_doc(self):
+		# Datahenge: Surprising this doesn't already exist.
+		return frappe.get_doc(self.parenttype, self.parent)
+
 
 def execute_action(doctype, name, action, **kwargs):
 	"""Execute an action on a document (called by background worker)"""
