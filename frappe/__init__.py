@@ -331,7 +331,8 @@ def log(msg):
 
 	debug_log.append(as_unicode(msg))
 
-def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, indicator=None, alert=False, primary_action=None, is_minimizable=None, wide=None):
+def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, indicator=None,
+             alert=False, primary_action=None, is_minimizable=None, wide=None, level=None):
 	"""Print a message to the user (via HTTP response).
 	Messages are sent in the `__server_messages` property in the
 	response JSON and shown in a pop-up / modal.
@@ -341,6 +342,8 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 	:param raise_exception: [optional] Raise given exception and show message.
 	:param as_table: [optional] If `msg` is a list of lists, render as HTML table.
 	:param as_list: [optional] If `msg` is a list, render as un-ordered list.
+	:param indicator: ???
+	:param alert: ???
 	:param primary_action: [optional] Bind a primary server/client side action.
 	:param is_minimizable: [optional] Allow users to minimize the modal
 	:param wide: [optional] Show wide modal
@@ -364,6 +367,20 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 	if flags.mute_messages:
 		_raise_exception()
 		return
+
+	# Datahenge: Do not reply if Message Level < User Message Level
+	def _get_numeric_level(level_str):
+		# In descending order of importance.
+		LEVELS = [ 'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG' ]
+		try:
+			return LEVELS.index(level_str.upper())
+		except Exception:
+			raise ValueError(f"Invalid message level: {level_str.upper()}")
+
+	if level and _get_numeric_level(level) > _get_numeric_level(get_doc('User', session.user).message_level):
+		_raise_exception()
+		return
+	# Datahenge: End Modification
 
 	if as_table and type(msg) in (list, tuple):
 		out.as_table = 1
