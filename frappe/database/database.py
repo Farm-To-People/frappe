@@ -568,6 +568,8 @@ class Database(object):
 		if df.fieldtype in frappe.model.numeric_fieldtypes:
 			val = cint(val)
 
+		# TODO:  Datahenge, would be great if we applied a datetime.date format immediately.
+
 		self.value_cache[doctype][fieldname] = val
 
 		return val

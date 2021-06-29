@@ -161,6 +161,17 @@ class BaseDocument(object):
 		else:
 			self.__dict__[key] = value
 
+	# Datahenge: Safely assign Values, without accidentally creating new Keys.
+	def safeset(self, key, value, as_value=False):
+		if not hasattr(self, key):
+			raise AttributeError(f"Cannot assign value to unknown attribute '{key}' in class {type(self).__name__}")
+		if isinstance(value, list) and not as_value:
+			self.__dict__[key] = []
+			self.extend(key, value)
+		else:
+			self.__dict__[key] = value
+	# Datahenge: End
+
 	def delete_key(self, key):
 		if key in self.__dict__:
 			del self.__dict__[key]
