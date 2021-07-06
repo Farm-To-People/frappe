@@ -60,7 +60,10 @@ def sync_for(app_name, force=0, sync_everything = False, verbose=False, reset_pe
 				"doctype", d[1], d[1] + ".json"))
 
 	for module_name in frappe.local.app_modules.get(app_name) or []:
-		folder = os.path.dirname(frappe.get_module(app_name + "." + module_name).__file__)
+		try:
+			folder = os.path.dirname(frappe.get_module(app_name + "." + module_name).__file__)
+		except ModuleNotFoundError as ex:
+			raise ValueError(f"Cannot load module '{module_name}'.  If this module was deleted, verify cache and contents of 'modules.txt' in the App's folder.") from ex
 		get_doc_files(files, folder)
 
 	l = len(files)
