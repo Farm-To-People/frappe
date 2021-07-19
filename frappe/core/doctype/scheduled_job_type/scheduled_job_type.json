@@ -6,6 +6,7 @@
    "label": "Execute"
   }
  ],
+ "allow_copy": 1,
  "creation": "2019-09-23 14:34:09.205368",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -23,7 +24,6 @@
   {
    "fieldname": "method",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Method",
    "read_only": 1,
    "reqd": 1
@@ -81,7 +81,7 @@
    "link_fieldname": "scheduled_job_type"
   }
  ],
- "modified": "2020-10-07 10:39:24.519460",
+ "modified": "2021-07-13 18:18:11.264431",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Scheduled Job Type",

@@ -437,7 +437,7 @@ def clear_last_message():
 		local.message_log = local.message_log[:-1]
 
 def throw(msg, exc=ValidationError, title=None, is_minimizable=None, wide=None, as_list=False):
-	"""Throw execption and show message (`msgprint`).
+	"""Throw exception and show message (`msgprint`).
 
 	:param msg: Message.
 	:param exc: Exception class. Default `frappe.ValidationError`"""

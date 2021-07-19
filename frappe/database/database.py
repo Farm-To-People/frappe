@@ -576,6 +576,9 @@ class Database(object):
 
 	def get_singles_value(self, *args, **kwargs):
 		"""Alias for get_single_value"""
+		# Datahenge: No purpose having an alias, and it's rarely used.
+		import warnings
+		warnings.warn("This function is deprecated, using 'get_single_value' instead.", DeprecationWarning)
 		return self.get_single_value(*args, **kwargs)
 
 	def _get_values_from_table(self, fields, filters, doctype, as_dict, debug, order_by=None, update=None, for_update=False):
