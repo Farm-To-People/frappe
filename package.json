@@ -42,7 +42,7 @@
     "localforage": "^1.9.0",
     "moment": "^2.20.1",
     "moment-timezone": "^0.5.28",
-    "node-sass": "^5.0.0",
+    "node-sass": "^6.0.0",
     "plyr": "^3.6.2",
     "quagga": "^0.12.1",
     "quill": "2.0.0-dev.2",
