@@ -1833,4 +1833,4 @@ def whatis(message, backend=True, frontend=True):
 		print(msg)
 	if frontend:
 		msg = msg.replace('\n', '<br>')
-		frappe.msgprint(msg)
+		msgprint(msg)
