@@ -196,6 +196,11 @@ class Database(object):
 		if frappe.conf.get('allow_tests') and frappe.cache().get_value('flag_print_sql'):
 			print(self.mogrify(query, values))
 
+		# Datahenge: Warn about invalid combination:
+		if explain and (not debug):
+			import warnings
+			warnings.warn("Calling this function with 'explain', but without 'debug', will not explain the SQL query.", UserWarning)
+
 		# debug
 		if debug:
 			if explain and query.strip().lower().startswith('select'):
