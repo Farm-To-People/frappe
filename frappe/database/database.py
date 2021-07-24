@@ -71,9 +71,9 @@ class Database(object):
 	def connect(self):
 		"""Connects to a database as set in `site_config.json`."""
 		self.cur_db_name = self.user
-		self._conn = self.get_connection()
-		self._cursor = self._conn.cursor()
-		frappe.local.rollback_observers = []
+		self._conn = self.get_connection()  # pylint: disable=assignment-from-no-return
+		self._cursor = self._conn.cursor()  
+		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 
 	def use(self, db_name):
 		"""`USE` db_name."""
@@ -259,7 +259,7 @@ class Database(object):
 		could cause the system to hang."""
 		if self.transaction_writes and \
 			query and query.strip().split()[0].lower() in ['start', 'alter', 'drop', 'create', "begin", "truncate"]:
-			raise Exception('This statement can cause implicit commit')
+			raise Exception(f"This statement can cause implicit commit:\n{query}")
 
 		if query and query.strip().lower() in ('commit', 'rollback'):
 			self.transaction_writes = 0
@@ -762,7 +762,7 @@ class Database(object):
 
 		self.sql("commit")
 
-		frappe.local.rollback_observers = []
+		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 		self.flush_realtime_log()
 		enqueue_jobs_after_commit()
 		flush_local_link_count()
@@ -775,7 +775,7 @@ class Database(object):
 		for args in frappe.local.realtime_log:
 			frappe.realtime.emit_via_redis(*args)
 
-		frappe.local.realtime_log = []
+		frappe.local.realtime_log = []  # pylint: disable=assigning-non-slot
 
 	def rollback(self):
 		"""`ROLLBACK` current transaction."""
