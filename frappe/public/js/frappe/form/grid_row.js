@@ -143,6 +143,8 @@ export default class GridRow {
 			}
 
 			me.toggle_view(false);
+			// Datahenge : Bug Fix? Make sure we can Save the record, after this move.
+			me.frm.dirty();
 			me.grid.refresh();
 			$(me.frm.wrapper).trigger("grid-move-row", [me.frm, me]);
 		}, __('Move To'), 'Update');

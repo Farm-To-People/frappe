@@ -399,9 +399,18 @@ class Document(BaseDocument):
 	def get_doc_before_save(self):
 		return getattr(self, '_doc_before_save', None)
 
-	def has_value_changed(self, fieldname):
+	def has_value_changed(self, fieldname, ignore_new=False, debug=False):
 		'''Returns true if value is changed before and after saving'''
+		# Datahenge : Add the ability to ignore new records.
 		previous = self.get_doc_before_save()
+		if ignore_new and (not previous):
+			return False
+		if not previous:
+			if debug:
+				print("No previous value found; returning a True.")
+			return True
+		if debug:
+			print(f"Before: {previous.get(fieldname)}, After: {self.get(fieldname)}")
 		return previous.get(fieldname)!=self.get(fieldname) if previous else True
 
 	def set_new_name(self, force=False, set_name=None, set_child_names=True):
