@@ -64,8 +64,6 @@ frappe.Application = Class.extend({
 			}
 		});
 
-		this.set_rtl();
-
 		// page container
 		this.make_page_container();
 		this.set_route();
@@ -289,7 +287,7 @@ frappe.Application = Class.extend({
 		}
 		if (!frappe.workspaces['home']) {
 			// default workspace is settings for Frappe
-			frappe.workspaces['home'] = frappe.workspaces['build'];
+			frappe.workspaces['home'] = frappe.workspaces[Object.keys(frappe.workspaces)[0]];
 		}
 	},
 
@@ -489,17 +487,6 @@ frappe.Application = Class.extend({
 		}, 100);
 	},
 
-	set_rtl: function() {
-		if (frappe.utils.is_rtl()) {
-			var ls = document.createElement('link');
-			ls.rel="stylesheet";
-			ls.type = "text/css";
-			ls.href= "/assets/css/frappe-rtl.css";
-			document.getElementsByTagName('head')[0].appendChild(ls);
-			$('body').addClass('frappe-rtl');
-		}
-	},
-
 	show_change_log: function() {
 		var me = this;
 		let change_log = frappe.boot.change_log;
@@ -605,8 +592,7 @@ frappe.Application = Class.extend({
 	setup_copy_doc_listener() {
 		$('body').on('paste', (e) => {
 			try {
-				let clipboard_data = e.clipboardData || window.clipboardData || e.originalEvent.clipboardData;
-				let pasted_data = clipboard_data.getData('Text');
+				let pasted_data = frappe.utils.get_clipboard_data(e);
 				let doc = JSON.parse(pasted_data);
 				if (doc.doctype) {
 					e.preventDefault();
@@ -621,6 +607,7 @@ frappe.Application = Class.extend({
 						let res = frappe.model.with_doctype(doc.doctype, () => {
 							let newdoc = frappe.model.copy_doc(doc);
 							newdoc.__newname = doc.name;
+							delete doc.name;
 							newdoc.idx = null;
 							newdoc.__run_link_triggers = false;
 							frappe.set_route('Form', newdoc.doctype, newdoc.name);

@@ -10,6 +10,7 @@ from frappe.modules import get_doc_path
 from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils import cint, sanitize_html, strip_html
 from six import string_types
+from frappe.utils.jinja import is_rtl
 
 no_cache = 1
 
@@ -48,7 +49,8 @@ def get_context(context):
 		"css": get_print_style(frappe.form_dict.style, print_format),
 		"comment": frappe.session.user,
 		"title": doc.get(meta.title_field) if meta.title_field else doc.name,
-		"has_rtl": True if frappe.local.lang in ["ar", "he", "fa", "ps"] else False
+		"lang": frappe.local.lang,
+		"layout_direction": "rtl" if is_rtl() else "ltr"
 	}
 
 def get_print_format_doc(print_format_name, meta):
@@ -409,7 +411,7 @@ def get_print_style(style=None, print_format=None, for_legacy=False):
 		css = css + '\n' + frappe.db.get_value('Print Style', style, 'css')
 
 	# move @import to top
-	for at_import in list(set(re.findall("(@import url\([^\)]+\)[;]?)", css))):
+	for at_import in list(set(re.findall(r"(@import url\([^\)]+\)[;]?)", css))):
 		css = css.replace(at_import, "")
 
 		# prepend css with at_import
@@ -505,8 +507,9 @@ window.print();
 
 // close the window after print
 // NOTE: doesn't close if print is cancelled in Chrome
+// Changed timeout to 5s from 1s because it blocked mobile view rendering
 setTimeout(function() {
 	window.close();
-}, 1000);
+}, 5000);
 </script>
 """

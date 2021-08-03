@@ -359,15 +359,19 @@ def get_desktop_page(page):
 	Returns:
 		dict: dictionary of cards, charts and shortcuts to be displayed on website
 	"""
-	wspace = Workspace(page)
-	wspace.build_workspace()
-	return {
-		'charts': wspace.charts,
-		'shortcuts': wspace.shortcuts,
-		'cards': wspace.cards,
-		'onboarding': wspace.onboarding,
-		'allow_customization': not wspace.doc.disable_user_customization
-	}
+	try:
+		wspace = Workspace(page)
+		wspace.build_workspace()
+		return {
+			'charts': wspace.charts,
+			'shortcuts': wspace.shortcuts,
+			'cards': wspace.cards,
+			'onboarding': wspace.onboarding,
+			'allow_customization': not wspace.doc.disable_user_customization
+		}
+	except DoesNotExistError:
+		frappe.log_error(frappe.get_traceback())
+		return {}
 
 @frappe.whitelist()
 def get_desk_sidebar_items():
@@ -450,6 +454,7 @@ def get_custom_report_list(module):
 			"type": "Link",
 			"link_type": "report",
 			"doctype": r.ref_doctype,
+			"dependencies": r.ref_doctype,
 			"is_query_report": 1 if r.report_type in ("Query Report", "Script Report", "Custom Report") else 0,
 			"label": _(r.name),
 			"link_to": r.name,
@@ -608,3 +613,4 @@ def merge_cards_based_on_label(cards):
 			cards_dict[label] = card
 
 	return list(cards_dict.values())
+

@@ -30,7 +30,7 @@
     "driver.js": "^0.9.8",
     "express": "^4.17.1",
     "fast-deep-equal": "^2.0.1",
-    "frappe-charts": "^1.5.1",
+    "frappe-charts": "^2.0.0-rc13",
     "frappe-datatable": "^1.15.3",
     "frappe-gantt": "^0.5.0",
     "fuse.js": "^3.4.6",
@@ -45,10 +45,19 @@
     "node-sass": "^6.0.0",
     "plyr": "^3.6.2",
     "quagga": "^0.12.1",
-    "quill": "2.0.0-dev.2",
+    "quill": "2.0.0-dev.4",
     "quill-image-resize": "^3.0.9",
     "qz-tray": "^2.0.8",
     "redis": "^3.1.1",
+    "showdown": "^1.9.1",
+    "snyk": "^1.518.0",
+    "socket.io": "^2.4.0",
+    "superagent": "^3.8.2",
+    "touch": "^3.1.0",
+    "vue": "^2.6.11",
+    "vue-router": "^2.0.0"
+  },
+  "devDependencies": {
     "rollup": "^1.2.2",
     "rollup-plugin-buble": "^0.19.2",
     "rollup-plugin-commonjs": "^8.3.0",
@@ -57,17 +66,8 @@
     "rollup-plugin-postcss": "^2.0.3",
     "rollup-plugin-terser": "^4.0.4",
     "rollup-plugin-vue": "4.2.0",
-    "showdown": "^1.9.1",
-    "snyk": "^1.518.0",
-    "socket.io": "^2.4.0",
-    "superagent": "^3.8.2",
-    "touch": "^3.1.0",
-    "vue": "^2.6.11",
-    "vue-router": "^2.0.0",
+    "svg-sprite": "^1.5.0",
     "vue-template-compiler": "^2.6.11"
   },
-  "devDependencies": {
-    "cypress": "^3.1.1",
-    "cypress-file-upload": "^3.1.0"
-  }
+  "snyk": true
 }

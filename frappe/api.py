@@ -11,6 +11,7 @@ import frappe.client
 import frappe.handler
 from frappe import _
 from frappe.utils.response import build_response
+from frappe.utils.data import sbool
 
 
 def handle():
@@ -108,36 +109,47 @@ def handle():
 
 			elif doctype:
 				if frappe.local.request.method == "GET":
-					if frappe.local.form_dict.get('fields'):
-						frappe.local.form_dict['fields'] = json.loads(frappe.local.form_dict['fields'])
-					frappe.local.form_dict.setdefault('limit_page_length', 20)
-					frappe.local.response.update({
-						"data": frappe.call(
-							frappe.client.get_list,
-							doctype,
-							**frappe.local.form_dict
-						)
-					})
+					# set fields for frappe.get_list
+					if frappe.local.form_dict.get("fields"):
+						frappe.local.form_dict["fields"] = json.loads(frappe.local.form_dict["fields"])
+
+					# set limit of records for frappe.get_list
+					frappe.local.form_dict.setdefault(
+						"limit_page_length",
+						frappe.local.form_dict.limit or frappe.local.form_dict.limit_page_length or 20,
+					)
+
+					# convert strings to native types - only as_dict and debug accept bool
+					for param in ["as_dict", "debug"]:
+						param_val = frappe.local.form_dict.get(param)
+						if param_val is not None:
+							frappe.local.form_dict[param] = sbool(param_val)
+
+					# evaluate frappe.get_list
+					data = frappe.call(frappe.client.get_list, doctype, **frappe.local.form_dict)
+
+					# set frappe.get_list result to response
+					frappe.local.response.update({"data": data})
 
 				if frappe.local.request.method == "POST":
+					# fetch data from from dict
 					data = get_request_form_data()
-					data.update({
-						"doctype": doctype
-					})
+					data.update({"doctype": doctype})
+
 					# Farm To People, Datahenge
 					# I cannot believe this isn't standard code.
 					# On POST, if a 'name' is passed, but the record already exists?  ERROR OUT!
 					if 'name' in data:
-						try:
-							doc = frappe.get_doc(doctype, data['name'])
+						if frappe.db.exists(doctype, data['name']):
 							raise frappe.NameError(f"Record with name '{data['name']}' already exists.")
-						except frappe.DoesNotExistError:
-							frappe.local.response.pop('exc_type')  # clear the exception
-							pass
-					# end of very-critical fix.
-					frappe.local.response.update({
-						"data": frappe.get_doc(data).insert().as_dict()
-					})
+					# End of Fix
+					# insert document from request data
+					doc = frappe.get_doc(data).insert()
+
+					# set response data
+					frappe.local.response.update({"data": doc.as_dict()})
+
+					# commit for POST requests
 					frappe.db.commit()
 			else:
 				raise frappe.DoesNotExistError

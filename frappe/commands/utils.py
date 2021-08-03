@@ -16,13 +16,13 @@ from frappe.utils import get_bench_path, update_progress_bar, cint
 
 @click.command('build')
 @click.option('--app', help='Build assets for app')
-@click.option('--make-copy', is_flag=True, default=False, help='Copy the files instead of symlinking')
-@click.option('--restore', is_flag=True, default=False, help='Copy the files instead of symlinking with force')
+@click.option('--hard-link', is_flag=True, default=False, help='Copy the files instead of symlinking')
+@click.option('--make-copy', is_flag=True, default=False, help='[DEPRECATED] Copy the files instead of symlinking')
+@click.option('--restore', is_flag=True, default=False, help='[DEPRECATED] Copy the files instead of symlinking with force')
 @click.option('--verbose', is_flag=True, default=False, help='Verbose')
 @click.option('--force', is_flag=True, default=False, help='Force build assets instead of downloading available')
-def build(app=None, make_copy=False, restore=False, verbose=False, force=False):
+def build(app=None, hard_link=False, make_copy=False, restore=False, verbose=False, force=False):
 	"Minify + concatenate JS and CSS files, build translations"
-	import frappe.build
 	frappe.init('')
 	# don't minify in developer_mode for faster builds
 	no_compress = frappe.local.conf.developer_mode or False
@@ -34,7 +34,20 @@ def build(app=None, make_copy=False, restore=False, verbose=False, force=False):
 	else:
 		skip_frappe = False
 
-	frappe.build.bundle(no_compress, app=app, make_copy=make_copy, restore=restore, verbose=verbose, skip_frappe=skip_frappe)
+	if make_copy or restore:
+		hard_link = make_copy or restore
+		click.secho(
+			"bench build: --make-copy and --restore options are deprecated in favour of --hard-link",
+			fg="yellow",
+		)
+
+	frappe.build.bundle(
+		skip_frappe=skip_frappe,
+		no_compress=no_compress,
+		hard_link=hard_link,
+		verbose=verbose,
+		app=app,
+	)
 
 
 @click.command('watch')
@@ -488,6 +501,8 @@ frappe.db.connect()
 @pass_context
 def console(context):
 	"Start ipython console for a site"
+	import warnings
+
 	site = get_site(context)
 	frappe.init(site=site)
 	frappe.connect()
@@ -508,6 +523,7 @@ def console(context):
 	if failed_to_import:
 		print("\nFailed to import:\n{}".format(", ".join(failed_to_import)))
 
+	warnings.simplefilter('ignore')
 	IPython.embed(display_banner="", header="", colors="neutral")
 
 
@@ -553,17 +569,29 @@ def run_tests(context, app=None, module=None, doctype=None, test=(), profile=Fal
 
 		# Generate coverage report only for app that is being tested
 		source_path = os.path.join(get_bench_path(), 'apps', app or 'frappe')
-		cov = Coverage(source=[source_path], omit=[
+		incl = [
+			'*.py',
+		]
+		omit = [
 			'*.html',
 			'*.js',
 			'*.xml',
+			'*.pyc',
 			'*.css',
 			'*.less',
 			'*.scss',
 			'*.vue',
+			'*/test_*',
+			'*/node_modules/*',
 			'*/doctype/*/*_dashboard.py',
-			'*/patches/*'
-		])
+			'*/patches/*',
+		]
+
+		if not app or app == 'frappe':
+			omit.append('*/tests/*')
+			omit.append('*/commands/*')
+
+		cov = Coverage(source=[source_path], omit=omit, include=incl)
 		cov.start()
 
 	ret = frappe.test_runner.main(app, module, doctype, context.verbose, tests=tests,
@@ -580,12 +608,29 @@ def run_tests(context, app=None, module=None, doctype=None, test=(), profile=Fal
 	if os.environ.get('CI'):
 		sys.exit(ret)
 
+@click.command('run-parallel-tests')
+@click.option('--app', help="For App", default='frappe')
+@click.option('--build-number', help="Build number", default=1)
+@click.option('--total-builds', help="Total number of builds", default=1)
+@click.option('--with-coverage', is_flag=True, help="Build coverage file")
+@click.option('--use-orchestrator', is_flag=True, help="Use orchestrator to run parallel tests")
+@pass_context
+def run_parallel_tests(context, app, build_number, total_builds, with_coverage=False, use_orchestrator=False):
+	site = get_site(context)
+	if use_orchestrator:
+		from frappe.parallel_test_runner import ParallelTestWithOrchestrator
+		ParallelTestWithOrchestrator(app, site=site, with_coverage=with_coverage)
+	else:
+		from frappe.parallel_test_runner import ParallelTestRunner
+		ParallelTestRunner(app, site=site, build_number=build_number, total_builds=total_builds, with_coverage=with_coverage)
 
 @click.command('run-ui-tests')
 @click.argument('app')
 @click.option('--headless', is_flag=True, help="Run UI Test in headless mode")
+@click.option('--parallel', is_flag=True, help="Run UI Test in parallel mode")
+@click.option('--ci-build-id')
 @pass_context
-def run_ui_tests(context, app, headless=False):
+def run_ui_tests(context, app, headless=False, parallel=True, ci_build_id=None):
 	"Run UI tests"
 	site = get_site(context)
 	app_base_path = os.path.abspath(os.path.join(frappe.get_app_path(app), '..'))
@@ -613,9 +658,15 @@ def run_ui_tests(context, app, headless=False):
 		frappe.commands.popen("yarn add cypress@^6 cypress-file-upload@^5 --no-lockfile")
 
 	# run for headless mode
-	run_or_open = 'run --browser firefox --record --key 4a48f41c-11b3-425b-aa88-c58048fa69eb' if headless else 'open'
+	run_or_open = 'run --browser firefox --record' if headless else 'open'
 	command = '{site_env} {password_env} {cypress} {run_or_open}'
 	formatted_command = command.format(site_env=site_env, password_env=password_env, cypress=cypress_path, run_or_open=run_or_open)
+
+	if parallel:
+		formatted_command += ' --parallel'
+
+	if ci_build_id:
+		formatted_command += ' --ci-build-id {}'.format(ci_build_id)
 
 	click.secho("Running Cypress...", fg="yellow")
 	frappe.commands.popen(formatted_command, cwd=app_base_path, raise_err=True)
@@ -713,22 +764,49 @@ def set_config(context, key, value, global_=False, parse=False, as_dict=False):
 			frappe.destroy()
 
 
-@click.command('version')
-def get_version():
-	"Show the versions of all the installed apps"
+@click.command("version")
+@click.option("-f", "--format", "output",
+	type=click.Choice(["plain", "table", "json", "legacy"]), help="Output format", default="legacy")
+def get_version(output):
+	"""Show the versions of all the installed apps."""
+	from git import Repo
+	from frappe.utils.commands import render_table
 	from frappe.utils.change_log import get_app_branch
-	frappe.init('')
 
-	for m in sorted(frappe.get_all_apps()):
-		branch_name = get_app_branch(m)
-		module = frappe.get_module(m)
-		app_hooks = frappe.get_module(m + ".hooks")
+	frappe.init("")
+	data = []
 
-		if hasattr(app_hooks, '{0}_version'.format(branch_name)):
-			print("{0} {1}".format(m, getattr(app_hooks, '{0}_version'.format(branch_name))))
+	for app in sorted(frappe.get_all_apps()):
+		module = frappe.get_module(app)
+		app_hooks = frappe.get_module(app + ".hooks")
+		repo = Repo(frappe.get_app_path(app, ".."))
 
-		elif hasattr(module, "__version__"):
-			print("{0} {1}".format(m, module.__version__))
+		app_info = frappe._dict()
+		app_info.app = app
+		app_info.branch = get_app_branch(app)
+		app_info.commit = repo.head.object.hexsha[:7]
+		app_info.version = getattr(app_hooks, f"{app_info.branch}_version", None) or module.__version__
+
+		data.append(app_info)
+
+	{
+		"legacy": lambda: [
+			click.echo(f"{app_info.app} {app_info.version}")
+			for app_info in data
+		],
+		"plain": lambda: [
+			click.echo(f"{app_info.app} {app_info.version} {app_info.branch} ({app_info.commit})")
+			for app_info in data
+		],
+		"table": lambda: render_table(
+			[["App", "Version", "Branch", "Commit"]] +
+			[
+				[app_info.app, app_info.version, app_info.branch, app_info.commit]
+				for app_info in data
+			]
+		),
+		"json": lambda: click.echo(json.dumps(data, indent=4)),
+	}[output]()
 
 
 @click.command('rebuild-global-search')
@@ -792,5 +870,6 @@ commands = [
 	watch,
 	bulk_rename,
 	add_to_email_queue,
-	rebuild_global_search
+	rebuild_global_search,
+	run_parallel_tests
 ]
