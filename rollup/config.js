@@ -56,7 +56,10 @@ function get_rollup_options_for_js(output_file, input_files) {
 			objectAssign: 'Object.assign',
 			transforms: {
 				dangerousForOf: true,
-				classes: false
+				classes: false,
+				// Datahenge: Per this Discuss article:
+				// https://discuss.erpnext.com/t/frappe-min-js-not-compiling-so-failing-to-load-login-screen-how-to-resolve-it/72251
+				asyncAwait: false
 			},
 			exclude: [path.resolve(bench_path, '**/*.css'), path.resolve(bench_path, '**/*.less')]
 		}),

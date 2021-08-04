@@ -1,5 +1,5 @@
 {
-  "name": "frappe",
+  "name": "frappe-framework",
   "scripts": {
     "build": "node rollup/build.js",
     "production": "FRAPPE_ENV=production node rollup/build.js",
@@ -22,9 +22,7 @@
     "air-datepicker": "github:frappe/air-datepicker",
     "autoprefixer": "^9.8.6",
     "awesomplete": "^1.1.5",
-    "babel-runtime": "^6.26.0",
     "bootstrap": "^4.5.0",
-    "chalk": "^2.3.2",
     "cookie": "^0.4.0",
     "cssnano": "^4.1.10",
     "driver.js": "^0.9.8",
@@ -34,11 +32,9 @@
     "frappe-datatable": "^1.15.3",
     "frappe-gantt": "^0.5.0",
     "fuse.js": "^3.4.6",
-    "graphlib": "^2.1.8",
     "highlight.js": "^10.4.1",
     "js-sha256": "^0.9.0",
     "jsbarcode": "^3.9.0",
-    "less": "^3.11.1",
     "localforage": "^1.9.0",
     "moment": "^2.20.1",
     "moment-timezone": "^0.5.28",
@@ -49,7 +45,7 @@
     "quill-image-resize": "^3.0.9",
     "qz-tray": "^2.0.8",
     "redis": "^3.1.1",
-    "rtlcss": "^3.3.0",
+    "rtlcss": "2.6.2",
     "showdown": "^1.9.1",
     "snyk": "^1.518.0",
     "socket.io": "^2.4.0",
@@ -59,6 +55,10 @@
     "vue-router": "^2.0.0"
   },
   "devDependencies": {
+    "babel-runtime": "^6.26.0",
+    "chalk": "^2.3.2",
+    "graphlib": "^2.1.8",
+    "less": "^3.11.1",
     "rollup": "^1.2.2",
     "rollup-plugin-buble": "^0.19.2",
     "rollup-plugin-commonjs": "^8.3.0",
