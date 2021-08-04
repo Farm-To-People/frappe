@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 import frappe
 import json
 import re
-import bleach_whitelist.bleach_whitelist as bleach_whitelist
+import bleach_allowlist.bleach_allowlist as bleach_allowlist
 from six import string_types
 
 def clean_html(html):
@@ -53,7 +53,7 @@ def clean_script_and_style(html):
 def sanitize_html(html, linkify=False):
 	"""
 	Sanitize HTML tags, attributes and style to prevent XSS attacks
-	Based on bleach clean, bleach whitelist and html5lib's Sanitizer defaults
+	Based on bleach clean, bleach allowlist and html5lib's Sanitizer defaults
 
 	Does not sanitize JSON, as it could lead to future problems
 	"""
@@ -72,7 +72,7 @@ def sanitize_html(html, linkify=False):
 	tags = (acceptable_elements + svg_elements + mathml_elements
 		+ ["html", "head", "meta", "link", "body", "style", "o:p"])
 	attributes = {"*": acceptable_attributes, 'svg': svg_attributes}
-	styles = bleach_whitelist.all_styles
+	styles = bleach_allowlist.all_styles
 	strip_comments = False
 
 	# returns html with escaped tags, escaped orphan >, <, etc.
