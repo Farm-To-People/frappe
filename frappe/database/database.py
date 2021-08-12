@@ -542,7 +542,7 @@ class Database(object):
 	def get_list(*args, **kwargs):
 		return frappe.get_list(*args, **kwargs)
 
-	def get_single_value(self, doctype, fieldname, cache=False):
+	def get_single_value(self, doctype, fieldname):  # DH - Removing unused cache argument.
 		"""Get property of Single DocType. Cache locally by default
 
 		:param doctype: DocType of the single object whose value is requested

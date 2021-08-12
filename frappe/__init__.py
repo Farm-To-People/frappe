@@ -1854,3 +1854,20 @@ def whatis(message, backend=True, frontend=True):
 	if frontend:
 		msg = msg.replace('\n', '<br>')
 		msgprint(msg)
+
+
+# Datahenge: A lovely little decorator, so I can see what's going on with functions.
+def debug_decorator(func):
+	'''Log the date and time of a function'''
+	from datetime import datetime
+	import inspect
+
+	def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
+		print(f'{"-"*30}')
+		print(f'Function: {func.__name__}\nRun on: {datetime.today().strftime("%Y-%m-%d %H:%M:%S")}')
+		caller = inspect.stack()[1][3]
+		callers_caller = inspect.stack()[2][3]
+		print(f"Caller: '{caller}'' via '{callers_caller}'")
+		func(*args, **kwargs)
+		print(f'{"-"*30}')
+	return wrapper

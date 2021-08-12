@@ -3,21 +3,22 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import frappe
+import functools
+from jinja2 import TemplateSyntaxError
+from past.builtins import cmp
+from six import iteritems, string_types
 
+import frappe
 from frappe import throw, _
 from frappe.utils import cstr
-
 from frappe.model.document import Document
-from jinja2 import TemplateSyntaxError
-from frappe.utils.user import is_website_user
+
 from frappe.model.naming import make_autoname
 from frappe.core.doctype.dynamic_link.dynamic_link import deduplicate_dynamic_links
-from six import iteritems, string_types
-from past.builtins import cmp
+
 from frappe.contacts.address_and_contact import set_link_title
 
-import functools
+
 
 
 class Address(Document):

@@ -116,3 +116,7 @@ class InvalidAuthorizationPrefix(CSRFTokenError): pass
 class InvalidAuthorizationToken(CSRFTokenError): pass
 class InvalidDatabaseFile(ValidationError): pass
 class ExecutableNotFound(FileNotFoundError): pass
+
+# Datahenge
+class ArgumentMissing(ValidationError):
+	http_status_code = 500
