@@ -81,7 +81,9 @@ def enqueue_events_for_site(site):
 def enqueue_events(site):
 	if schedule_jobs_based_on_activity():
 		frappe.flags.enqueued_jobs = []
+		# Read Redis for queued jobs + running jobs:
 		queued_jobs = get_jobs(site=site, key='job_type').get(site) or []
+		# Loop through all the Schedule Job Type documents:
 		for job_type in frappe.get_all('Scheduled Job Type', ('name', 'method'), dict(stopped=0)):
 			if not job_type.method in queued_jobs:
 				# don't add it to queue if still pending

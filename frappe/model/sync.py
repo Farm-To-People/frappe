@@ -2,27 +2,29 @@
 # MIT License. See license.txt
 
 from __future__ import unicode_literals, print_function
-"""
-	Sync's doctype and docfields from txt files to database
-	perms will get synced only if none exist
-"""
-import frappe
 import os
+import frappe
 from frappe.modules.import_file import import_file_by_path
 from frappe.modules.patch_handler import block_user
 from frappe.utils import update_progress_bar
 
-def sync_all(force=0, verbose=False, reset_permissions=False):
+
+def sync_all(force=0, reset_permissions=False):
+	"""
+	Synchronize DocType and DocFields from JSON text files to database.
+	By default, permissions will be synced only if none exist.
+	"""
+
 	block_user(True)
 
 	for app in frappe.get_installed_apps():
-		sync_for(app, force, verbose=verbose, reset_permissions=reset_permissions)
+		sync_for(app, force=force, reset_permissions=reset_permissions)
 
 	block_user(False)
 
 	frappe.clear_cache()
 
-def sync_for(app_name, force=0, sync_everything = False, verbose=False, reset_permissions=False):
+def sync_for(app_name, force=0, reset_permissions=False):
 	files = []
 
 	if app_name == "frappe":
@@ -66,16 +68,16 @@ def sync_for(app_name, force=0, sync_everything = False, verbose=False, reset_pe
 			raise ValueError(f"Cannot load module '{module_name}'.  If this module was deleted, verify cache and contents of 'modules.txt' in the App's folder.") from ex
 		get_doc_files(files, folder)
 
-	l = len(files)
-	if l:
-		for i, doc_path in enumerate(files):
+	number_of_files = len(files)
+	if number_of_files:
+		for idx, doc_path in enumerate(files):
 			import_file_by_path(doc_path, force=force, ignore_version=True,
 				reset_permissions=reset_permissions, for_sync=True)
 
 			frappe.db.commit()
 
 			# show progress bar
-			update_progress_bar("Updating DocTypes for {0}".format(app_name), i, l)
+			update_progress_bar("Updating DocTypes for {0}".format(app_name), idx, number_of_files)
 
 		# print each progress bar on new line
 		print()
