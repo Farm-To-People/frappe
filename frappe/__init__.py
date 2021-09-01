@@ -389,6 +389,10 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 
 	if as_table and type(msg) in (list, tuple):
 		out.as_table = 1
+	else:
+		# Datahenge: Replace newlines with <br>, since we're displaying on a web page.
+		if isinstance(out.message, str):
+			out.message = out.message.replace("\n", "<br>")
 
 	if as_list and type(msg) in (list, tuple) and len(msg) > 1:
 		out.as_list = 1

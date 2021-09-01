@@ -944,7 +944,7 @@ frappe.ui.form.Form = class FrappeForm {
 
 	check_doctype_conflict(docname) {
 		if(this.doctype=='DocType' && docname=='DocType') {
-			frappe.msgprint(__('Allowing DocType, DocType. Be careful!'));
+			frappe.msgprint(__('You are editing the Core DocType; please use caution!'));
 		} else if(this.doctype=='DocType') {
 			if (frappe.views.formview[docname] || frappe.pages['List/'+docname]) {
 				window.location.reload();

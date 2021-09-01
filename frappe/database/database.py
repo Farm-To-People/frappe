@@ -577,6 +577,7 @@ class Database(object):
 
 		return val
 
+	@frappe.debug_decorator
 	def get_singles_value(self, *args, **kwargs):
 		"""Alias for get_single_value"""
 		# Datahenge: No purpose having an alias, and it's rarely used.

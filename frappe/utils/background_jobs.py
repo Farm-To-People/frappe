@@ -185,7 +185,7 @@ def get_jobs(site=None, queue=None, key='method'):
 				if (job.kwargs['site'] == site) or site is None:
 					add_to_dict(job)
 			else:
-				print('No site found in job', job.__dict__)
+				pass  # print('No site found in job', job.__dict__)
 
 	return jobs_per_site
 
@@ -228,7 +228,8 @@ def validate_queue(queue, default_queue_list=None):
 		default_queue_list = list(queue_timeout)
 
 	if queue not in default_queue_list:
-		frappe.throw(_("Queue should be one of {0}").format(', '.join(default_queue_list)))
+		frappe.throw(_("Queue should be one of {0}. Got '{1}' instead.")
+		    .format(', '.join(default_queue_list), queue))
 
 def get_redis_conn():
 	if not hasattr(frappe.local, 'conf'):

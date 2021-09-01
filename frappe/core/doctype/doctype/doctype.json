@@ -308,6 +308,7 @@
   },
   {
    "depends_on": "eval:!doc.istable",
+   "description": "This value will appear below `name` in drop-down lists.",
    "fieldname": "title_field",
    "fieldtype": "Data",
    "label": "Title Field"
@@ -628,7 +629,7 @@
    "link_fieldname": "reference_doctype"
   }
  ],
- "modified": "2021-03-22 12:26:41.031135",
+ "modified": "2021-08-28 12:08:29.405168",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocType",

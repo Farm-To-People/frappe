@@ -33,7 +33,7 @@ def get_context(context):
 	return {"files": files[:backup_limit]}
 
 def get_scheduled_backup_limit():
-	backup_limit = frappe.db.get_singles_value('System Settings', 'backup_limit')
+	backup_limit = frappe.db.get_single_value('System Settings', 'backup_limit')
 	return cint(backup_limit)
 
 def cleanup_old_backups(site_path, files, limit):
