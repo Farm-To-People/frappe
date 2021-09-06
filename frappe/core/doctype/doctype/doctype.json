@@ -308,7 +308,7 @@
   },
   {
    "depends_on": "eval:!doc.istable",
-   "description": "This value will appear below `name` in drop-down lists.",
+   "description": "This value will appear below `name` in drop-down lists.\nIt <b>also</b> replaces 'name' as the left-most column on List Grids.",
    "fieldname": "title_field",
    "fieldtype": "Data",
    "label": "Title Field"
@@ -629,7 +629,7 @@
    "link_fieldname": "reference_doctype"
   }
  ],
- "modified": "2021-08-28 12:08:29.405168",
+ "modified": "2021-09-02 17:42:28.228192",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocType",

@@ -571,8 +571,14 @@ class Database(object):
 
 		val = cast_fieldtype(df.fieldtype, val)
 
-		# TODO:  Datahenge, would be great if we applied a datetime.date format immediately.
+		# TODO:  Datahenge:  I have No Idea why repeating this check is necessary here.  The same thing
+		#        happens only 10 lines above.  But if I don't?  Then 'bench execute' fails with KeyError: 'Global Defaults'
+		#        Pretty crazy stuff.
+		if not doctype in self.value_cache:
+			self.value_cache = self.value_cache[doctype] = {}
 
+		# TODO:  Datahenge:  If the SQL result is a DateTime, would be great if we applied a datetime.date format
+		#        immediately to what's in the cache.
 		self.value_cache[doctype][fieldname] = val
 
 		return val
