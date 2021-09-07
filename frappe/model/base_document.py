@@ -47,6 +47,7 @@ def get_controller(doctype):
 		else:
 			class_overrides = frappe.get_hooks('override_doctype_class')
 			if class_overrides and class_overrides.get(doctype):
+				print(f"Processing overrides for DocType '{doctype}'")
 				import_path = class_overrides[doctype][-1]
 				module_path, classname = import_path.rsplit('.', 1)
 				module = frappe.get_module(module_path)

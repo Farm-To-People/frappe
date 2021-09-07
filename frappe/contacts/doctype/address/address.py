@@ -22,6 +22,57 @@ from frappe.contacts.address_and_contact import set_link_title
 
 
 class Address(Document):
+
+	# Datahenge
+	def on_update(self):
+		self.update_customer_borough()
+		self.update_daily_orders()
+
+	def update_customer_borough(self):
+		if (self.address_type != "Shipping") or (not self.is_shipping_address):
+			return
+
+		# Find the Customer(s) associated with this Address record.
+		customer_keys = [ link.link_name for link in self.links if link.link_doctype == "Customer"]
+		if not customer_keys:
+			return
+
+		five_digit_postal_code = self.pincode[:5]  # Customer's address may be a 9-digit Zip.
+		doc_postal_code = frappe.get_doc("Postal Code", five_digit_postal_code)  # Fetch the Postal Code record.
+
+		for key in customer_keys:
+			doc_customer = frappe.get_doc("Customer", key)
+			if doc_customer.territory != doc_postal_code.territory:  # Territory has changed...
+				doc_customer.territory = doc_postal_code.territory
+				doc_customer.save()
+
+	def update_daily_orders(self):
+		# This works nicely, inside the Frappe module, because we don't need to import FTP objects.
+		if (self.address_type != "Shipping") or (not self.is_shipping_address):
+			return
+
+		# Find the Customer(s) associated with this Address record.
+		customer_keys = [ link.link_name for link in self.links if link.link_doctype == "Customer"]
+		if not customer_keys:
+			return
+
+		order_address_updated = False
+		for customer_key in customer_keys:
+			filters = { "status_delivery": "Ready",
+			            "customer": customer_key,
+						"status_editing": "Unlocked" }
+			daily_orders = frappe.get_list("Daily Order", filters=filters, pluck='name')
+			for daily_order in daily_orders:
+				doc_daily_order = frappe.get_doc("Daily Order", daily_order)
+				doc_daily_order.set_default_address()
+				doc_daily_order.save()
+				frappe.db.commit()  # Still not sure when it's appropriate to call this.
+				order_address_updated = True
+		if order_address_updated:
+			frappe.msgprint("\u2713 Updated shipping address on Daily Orders.")
+
+	# End Datahenge Custom Functions
+
 	def __setup__(self):
 		self.flags.linked = False
 
