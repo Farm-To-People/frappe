@@ -120,3 +120,7 @@ class ExecutableNotFound(FileNotFoundError): pass
 # Datahenge
 class ArgumentMissing(ValidationError):
 	http_status_code = 500
+
+# Datahenge
+class ArgumentType(ValidationError):
+	http_status_code = 500
