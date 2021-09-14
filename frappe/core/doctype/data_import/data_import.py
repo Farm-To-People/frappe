@@ -14,6 +14,8 @@ from frappe.utils.background_jobs import enqueue
 from frappe.utils.csvutils import validate_google_sheets_url
 
 
+# TODO:  Add a third option for Import Type, that Truncates the table first.
+
 class DataImport(Document):
 	def validate(self):
 		doc_before_save = self.get_doc_before_save()

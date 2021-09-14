@@ -337,7 +337,7 @@ def log(msg):
 	debug_log.append(as_unicode(msg))
 
 def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, indicator=None,
-             alert=False, primary_action=None, is_minimizable=None, wide=None, level=None):
+             alert=False, primary_action=None, is_minimizable=None, wide=None, level=None, to_console=False):
 	"""Print a message to the user (via HTTP response).
 	Messages are sent in the `__server_messages` property in the
 	response JSON and shown in a pop-up / modal.
@@ -352,6 +352,10 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 	:param primary_action: [optional] Bind a primary server/client side action.
 	:param is_minimizable: [optional] Allow users to minimize the modal
 	:param wide: [optional] Show wide modal
+
+	Farm To People
+	:param level: [optional] Indicates whether message is INFO, WARNING, ERROR.
+	:param to_console: [optional] Indicates the message should also be 'print()' to console
 	"""
 	from frappe.utils import strip_html_tags
 
@@ -397,7 +401,8 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 	if as_list and type(msg) in (list, tuple) and len(msg) > 1:
 		out.as_list = 1
 
-	if flags.print_messages and out.message:
+	# Datahenge: If the 'to_console' argument is set, this is an alternative to locals.flags
+	if (to_console or flags.print_messages) and out.message:
 		print(f"Message: {strip_html_tags(out.message)}")
 
 	if title:
