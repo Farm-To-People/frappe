@@ -26,7 +26,7 @@ class Address(Document):
 	# Datahenge
 	def on_update(self):
 		self.update_customer_borough()
-		self.update_daily_orders()
+		self.update_daily_orders(verbose=True)
 
 	def update_customer_borough(self):
 		if (self.address_type != "Shipping") or (not self.is_shipping_address):
@@ -46,7 +46,7 @@ class Address(Document):
 				doc_customer.territory = doc_postal_code.territory
 				doc_customer.save()
 
-	def update_daily_orders(self):
+	def update_daily_orders(self, verbose=False):
 		# This works nicely, inside the Frappe module, because we don't need to import FTP objects.
 		if (self.address_type != "Shipping") or (not self.is_shipping_address):
 			return
@@ -63,6 +63,8 @@ class Address(Document):
 						"status_editing": "Unlocked" }
 			daily_orders = frappe.get_list("Daily Order", filters=filters, pluck='name')
 			for daily_order in daily_orders:
+				if verbose:
+					print(f"Customer updated shipping address. Updating Daily Order {daily_order}")
 				doc_daily_order = frappe.get_doc("Daily Order", daily_order)
 				doc_daily_order.set_default_address()
 				doc_daily_order.save()
