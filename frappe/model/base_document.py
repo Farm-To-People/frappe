@@ -246,6 +246,8 @@ class BaseDocument(object):
 		if not getattr(value, "name", None):
 			value.__dict__['__islocal'] = 1
 
+		if hasattr(value, 'parent') and value.parent == 'Web Subscription':
+			print("Returning a Web Subscription Item:")
 		return value
 
 	def get_valid_dict(self, sanitize=True, convert_dates_to_str=False, ignore_nulls = False):
