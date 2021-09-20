@@ -13,6 +13,7 @@ from frappe import _
 from frappe.utils.response import build_response
 from frappe.utils.data import sbool
 
+# Datahenge: See line 98.
 
 def handle():
 	"""
@@ -95,8 +96,27 @@ def handle():
 						"data": doc.save().as_dict()
 					})
 
-					if doc.parenttype and doc.parent:
-						frappe.get_doc(doc.parenttype, doc.parent).save()
+					# -------------------------------
+					# Datahenge and Farm To People.
+					# -------------------------------
+					# The next few lines of code are a BIG DEAL.
+					# What happens is when a Child DocType is saved, the ENTIRE parent DocType is save()
+					# This can result in a HUGE ripple effect of unwanted code execution and validation
+					#
+					# Consider a Web Subscription with 20 Lines.  One line is touched by a PUT.  This results
+					# in a save() to the Parent.  That save() executes before_validate(), validate(), before_save(),
+					# a SQL UPDATE to the table, on_update() and on_change().
+					#
+					# Not only that.  But VERY LIKELY the parent calls validation() on EVERY child item.
+					# Even though none of them were ever modified.
+					#
+					# So.  I'm going to comment-out the next few lines of Code.
+					# And force each Child DocType to decide (on its own)
+					# what Parent code to call during a PUT, if any.
+
+					#if doc.parenttype and doc.parent:
+					# 	frappe.get_doc(doc.parenttype, doc.parent).save()
+					# -------------------------------
 
 					frappe.db.commit()
 
