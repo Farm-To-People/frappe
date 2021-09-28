@@ -833,7 +833,7 @@ class Document(BaseDocument):
 
 		if invalid_links:
 			msg = ", ".join((each[2] for each in invalid_links))
-			frappe.throw(_("Could not find {0}").format(msg),
+			frappe.throw(_("Invalid link. Could not find {0}").format(msg),
 				frappe.LinkValidationError)
 
 		if cancelled_links:
@@ -1375,6 +1375,66 @@ class Document(BaseDocument):
 	def get_parent_doc(self):
 		# Datahenge: Surprising this doesn't already exist.
 		return frappe.get_doc(self.parenttype, self.parent)
+
+	# -------------------------------
+	# DATHENGE: Magic Happens Here:
+	# -------------------------------
+	# @frappe.debug_decorator
+	def on_update_children(self, child_docfield_name):
+		"""
+		This function analyzes a Parent's child records, and based on CRUD, intelligently calls Child DocType controllers.
+		"""
+		print(f"\nEntering 'on_update_children' for DocType = {self.doctype} ...")
+
+		doc_orig = self.get_doc_before_save()
+		if not doc_orig:
+			# Scenario 1: Parent is a new Document, therefore every Child is also new.
+			for child_record in self.get(child_docfield_name):
+				print(f"Scenario 1, Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})")
+				child_record.on_update(parent_doc=self)
+			return
+
+		# Scenario 2: Parent is an existing Document.  There may be prexisting Child documents.
+		original_child_records = doc_orig.get(child_docfield_name)
+		print(f"Original Child Records: {original_child_records}")
+
+		# Scenario 2A: Some child documents were Deleted
+		docs_deleted = [ child_orig for child_orig in original_child_records
+		                 if child_orig.name not in [ child.name for child in self.get(child_docfield_name)]
+		               ]
+		if docs_deleted:
+			for deleted_doc in docs_deleted:
+				print(f"Scenario 2A: A {deleted_doc.doctype} Document was deleted.")
+				deleted_doc.after_delete(parent_doc=self)  # execute the Controller method 'after_delete' for this Child record.
+
+		# Loop through all the current children:
+		for child_doc in self.get(child_docfield_name):
+			if child_doc.name not in [ child_orig.name for child_orig in original_child_records]:
+				# Scenario 2B: Some child documents were Inserted.
+				print("Scenario 2B:")
+				child_doc.after_insert(parent_doc=self)
+				child_doc.on_update(parent_doc=self)
+				child_doc.on_change(parent_doc=self)
+				continue
+			# Find matching original child record:
+			child_orig = next(iter([ child_orig for child_orig in original_child_records if child_orig.name == child_doc.name ]))
+			if child_orig and (child_orig != child_doc):
+				# Scenario 2C: Some child document was Modified.
+				print("Scenario 2C:")
+				child_doc.on_update(parent_doc=self)
+				child_doc.on_change(parent_doc=self)
+
+
+	def validate_children(self, child_docfield_names):
+		"""
+		Datahenge: A controller function for validating Child Doctypes.
+		"""
+		if not isinstance(child_docfield_names, list):
+			raise ValueError("Argument 'child_docfield_names' should be a List of Strings.")
+
+		for docfield_name in child_docfield_names:
+			for child_doc in self.get(docfield_name):
+				child_doc.validate(parent_doc=self)
 
 
 def execute_action(doctype, name, action, **kwargs):

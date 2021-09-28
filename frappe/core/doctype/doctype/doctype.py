@@ -789,6 +789,10 @@ def validate_fields(meta):
 	def check_illegal_mandatory(docname, d):
 		if (d.fieldtype in no_value_fields) and d.fieldtype not in table_fields and d.reqd:
 			frappe.throw(_("{0}: Field {1} of type {2} cannot be mandatory").format(docname, d.label, d.fieldtype), IllegalMandatoryError)
+		# Datahenge:
+		if (d.fieldtype in no_value_fields) and d.fieldtype not in table_fields and d.reqd_in_database:
+			frappe.throw(_("{0}: Field {1} of type {2} cannot be mandatory").format(docname, d.label, d.fieldtype), IllegalMandatoryError)
+
 
 	def check_link_table_options(docname, d):
 		if frappe.flags.in_patch: return

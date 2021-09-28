@@ -112,6 +112,10 @@ class Database(object):
 				{"name": "a%", "owner":"test@example.com"})
 
 		"""
+
+		# TODO: Why so many, many SQL queries for a simple Daily Order PUT?
+		# print(f"\n{query}\n")
+
 		if re.search(r'ifnull\(', query, flags=re.IGNORECASE):
 			# replaces ifnull in query with coalesce
 			query = re.sub(r'ifnull\(', 'coalesce(', query, flags=re.IGNORECASE)
@@ -129,10 +133,20 @@ class Database(object):
 
 		# execute
 		try:
+			# Datahenge: Display every Query that meets a condition.  Useful for discovering What Is Going On?
+			# import traceback
+			# if query.lower().startswith('delete'):
+			#	debug = True
+			#	explain = True
+			#	print("BEGIN TRACE------------------------------------------------------")
+			#	traceback.print_stack()
 			if debug:
 				time_start = time()
 
 			self.log_query(query, values, debug, explain)
+
+			#if query.lower().startswith('delete'):
+			#	print("END TRACE--------------------------------------------------------")
 
 			if values!=():
 				if isinstance(values, dict):

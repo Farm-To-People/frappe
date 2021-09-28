@@ -3,6 +3,8 @@
 
 from __future__ import unicode_literals
 from six import iteritems, string_types
+import json
+
 
 import frappe
 import datetime
@@ -246,8 +248,6 @@ class BaseDocument(object):
 		if not getattr(value, "name", None):
 			value.__dict__['__islocal'] = 1
 
-		if hasattr(value, 'parent') and value.parent == 'Web Subscription':
-			print("Returning a Web Subscription Item:")
 		return value
 
 	def get_valid_dict(self, sanitize=True, convert_dates_to_str=False, ignore_nulls = False):
@@ -524,6 +524,11 @@ class BaseDocument(object):
 		missing = []
 
 		for df in self.meta.get("fields", {"reqd": ('=', 1)}):
+			if self.get(df.fieldname) in (None, []) or not strip_html(cstr(self.get(df.fieldname))).strip():
+				missing.append((df.fieldname, get_msg(df)))
+
+		# Datahenge: Include fields marked as Mandatory only in the Database.  JS code and UI does not care.
+		for df in self.meta.get("fields", {"reqd_in_database": ('=', 1)}):
 			if self.get(df.fieldname) in (None, []) or not strip_html(cstr(self.get(df.fieldname))).strip():
 				missing.append((df.fieldname, get_msg(df)))
 
@@ -980,6 +985,16 @@ class BaseDocument(object):
 		if self.doctype != "DocType":
 			for df in self.meta.get("fields", {"fieldtype": ('=', "Text Editor")}):
 				extract_images_from_doc(self, df.fieldname)
+
+	def pretty_print(self):
+		"""
+		Datahenge: A prettier version of as_json()
+		"""
+		from frappe.utils.response import json_handler
+		ret_dict = self.as_dict(convert_dates_to_str=True)
+		ret_json = json.dumps(ret_dict, indent=4, sort_keys=False, default=json_handler, separators=(',', ': '))
+		print(f"\n----------------\n{self.doctype} : {self.name}\n----------------\n{ret_json}")
+
 
 def _filter(data, filters, limit=None):
 	"""pass filters as:

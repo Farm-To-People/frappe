@@ -49,6 +49,7 @@ class Address(Document):
 	def update_daily_orders(self, verbose=False):
 		# This works nicely, inside the Frappe module, because we don't need to import FTP objects.
 		if (self.address_type != "Shipping") or (not self.is_shipping_address):
+			frappe.msgprint("Address is not customer's default Shipping Address.  Daily Orders will not be updated.", level='debug')
 			return
 
 		# Find the Customer(s) associated with this Address record.

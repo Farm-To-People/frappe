@@ -115,7 +115,7 @@ frappe.ui.form.save = function (frm, action, callback, btn) {
 		var has_errors = false;
 		frm.scroll_set = false;
 
-		if (frm.doc.docstatus == 2) return true; // don't check for cancel
+		if (frm.doc.docstatus == 2) return true; // don't check mandatory fields for Cancelled documents.
 
 		$.each(frappe.model.get_all_docs(frm.doc), function (i, doc) {
 			var error_fields = [];
@@ -130,6 +130,11 @@ frappe.ui.form.save = function (frm, action, callback, btn) {
 						folded = frm.layout.folded;
 					}
 
+					/* Datahenge: 'reqd' is the field labeled 'Mandatory' on the DocField UI.
+					   
+					   I've added my own 'reqd_in_database' so that I can bypass any JavaScript UI errors,
+					   and only validate the mandatory field inside the validate() Controller method.
+					*/
 					if (df.reqd && !frappe.model.has_value(doc.doctype, doc.name, df.fieldname)) {
 						has_errors = true;
 						error_fields[error_fields.length] = __(df.label);

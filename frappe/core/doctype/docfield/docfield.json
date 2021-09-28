@@ -17,6 +17,7 @@
   "hide_days",
   "hide_seconds",
   "reqd",
+  "reqd_in_database",
   "search_index",
   "in_list_view",
   "in_standard_filter",
@@ -481,13 +482,20 @@
    "fieldname": "non_negative",
    "fieldtype": "Check",
    "label": "Non Negative"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:!in_list([\"Section Break\", \"Column Break\", \"Button\", \"HTML\"], doc.fieldtype)",
+   "fieldname": "reqd_in_database",
+   "fieldtype": "Check",
+   "label": "Mandatory only in DB"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-10-29 06:09:26.454990",
+ "modified": "2021-09-20 17:48:27.493248",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

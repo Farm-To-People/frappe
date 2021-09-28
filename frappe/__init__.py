@@ -1817,6 +1817,9 @@ def safe_encode(param, encoding='utf-8'):
 
 
 def safe_decode(param, encoding='utf-8'):
+	# Datahenge: Automatically handle Exceptions as strings.
+	if isinstance(param, Exception):
+		param = str(param)
 	try:
 		param = param.decode(encoding)
 	except Exception:

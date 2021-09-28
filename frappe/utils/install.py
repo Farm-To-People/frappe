@@ -114,17 +114,19 @@ def before_tests():
 		# don't run before tests if any other app is installed
 		return
 
-	frappe.db.sql("delete from `tabCustom Field`")
-	frappe.db.sql("delete from `tabEvent`")
-	frappe.db.commit()
-	frappe.clear_cache()
+	# Datahenge: The upstream code below is is awful; running tests destroys Business Data.
+
+	# frappe.db.sql("delete from `tabCustom Field`")
+	# frappe.db.sql("delete from `tabEvent`")
+	# frappe.db.commit()
+	# frappe.clear_cache()
 
 	# complete setup if missing
-	if not int(frappe.db.get_single_value('System Settings', 'setup_complete') or 0):
-		complete_setup_wizard()
+	# if not int(frappe.db.get_single_value('System Settings', 'setup_complete') or 0):
+	#	complete_setup_wizard()
 
-	frappe.db.commit()
-	frappe.clear_cache()
+	#frappe.db.commit()
+	#frappe.clear_cache()
 
 def complete_setup_wizard():
 	from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
