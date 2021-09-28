@@ -20,6 +20,9 @@ from frappe.desk.form.document_follow import follow_document
 from frappe.core.doctype.server_script.server_script_utils import run_server_script_for_doc_event
 from frappe.utils.data import get_absolute_url
 
+# Datahenge
+import dictdiffer  # A library for finding the difference between 2 Python dictionaries.
+
 # once_only validation
 # methods
 
@@ -1379,50 +1382,63 @@ class Document(BaseDocument):
 	# -------------------------------
 	# DATHENGE: Magic Happens Here:
 	# -------------------------------
-	# @frappe.debug_decorator
-	def on_update_children(self, child_docfield_name):
+	def on_update_children(self, child_docfield_name, debug=False):
 		"""
 		This function analyzes a Parent's child records, and based on CRUD, intelligently calls Child DocType controllers.
 		"""
-		print(f"\nEntering 'on_update_children' for DocType = {self.doctype} ...")
+		dprint(f"\nEntering 'on_update_children' for DocType '{self.doctype}', Child '{child_docfield_name}'...", debug)
 
+		current_child_records = self.get(child_docfield_name)
 		doc_orig = self.get_doc_before_save()
 		if not doc_orig:
-			# Scenario 1: Parent is a new Document, therefore every Child is also new.
-			for child_record in self.get(child_docfield_name):
-				print(f"Scenario 1, Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})")
+			# Scenario 1: Parent is a new Document, therefore any Child is also new.
+			if not current_child_records:
+				dprint(f"* Scenario 0, New Parent: ({self.doctype}, {self.name}) has no children of DocType '{child_docfield_name}'", debug)
+				return
+			for child_record in current_child_records:
+				dprint(f"* Scenario 1, New Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})", debug)
 				child_record.on_update(parent_doc=self)
 			return
 
-		# Scenario 2: Parent is an existing Document.  There may be prexisting Child documents.
 		original_child_records = doc_orig.get(child_docfield_name)
-		print(f"Original Child Records: {original_child_records}")
+		if (not current_child_records) and (not original_child_records):
+			# Scenario 2: There are no children, and were not before.  Nothing to analyze.
+			dprint(f"* Scenario 2, Parent had/has no children of DocType {child_docfield_name}", debug)
+			return
 
-		# Scenario 2A: Some child documents were Deleted
+		# Scenario 3: Parent is an existing Document, and some Child documents are in play.
+		dprint(f"Quantity child records Before update: {len(original_child_records) or 0}", debug)
+		dprint(f"Quantity child records After update: {len(current_child_records) or 0}", debug)
+
 		docs_deleted = [ child_orig for child_orig in original_child_records
-		                 if child_orig.name not in [ child.name for child in self.get(child_docfield_name)]
+		                 if child_orig.name not in [ child.name for child in current_child_records]
 		               ]
 		if docs_deleted:
+			# Scenario 3A: Prexisting child documents were Deleted
 			for deleted_doc in docs_deleted:
-				print(f"Scenario 2A: A {deleted_doc.doctype} Document was deleted.")
+				dprint(f"* Scenario 3: Child document of type '{deleted_doc.doctype}' was Deleted.\n", debug)
 				deleted_doc.after_delete(parent_doc=self)  # execute the Controller method 'after_delete' for this Child record.
 
-		# Loop through all the current children:
-		for child_doc in self.get(child_docfield_name):
+		# Loop through all the children post-update:
+		for child_doc in current_child_records:
 			if child_doc.name not in [ child_orig.name for child_orig in original_child_records]:
-				# Scenario 2B: Some child documents were Inserted.
-				print("Scenario 2B:")
+				# Scenario 3B: Some child documents were Inserted.
+				dprint(f"* Scenario 4: Child document of type '{child_doc.doctype}' was Inserted.\n", debug)
 				child_doc.after_insert(parent_doc=self)
 				child_doc.on_update(parent_doc=self)
 				child_doc.on_change(parent_doc=self)
 				continue
-			# Find matching original child record:
+
+			# Child record existed before & after; compare them.
 			child_orig = next(iter([ child_orig for child_orig in original_child_records if child_orig.name == child_doc.name ]))
-			if child_orig and (child_orig != child_doc):
+
+			if _exist_significant_differences(child_orig, child_doc):
 				# Scenario 2C: Some child document was Modified.
-				print("Scenario 2C:")
+				dprint(f"* Scenario 5: Pre-existing Child record {child_doc.name} was Modified.\n", debug)
 				child_doc.on_update(parent_doc=self)
 				child_doc.on_change(parent_doc=self)
+			else:
+				dprint(f"* Scenario 6: Pre-existing Child record {child_doc.name} was Untouched.\n", debug)
 
 
 	def validate_children(self, child_docfield_names):
@@ -1456,4 +1472,31 @@ def execute_action(doctype, name, action, **kwargs):
 		doc.notify_update()
 
 
+def _exist_significant_differences(document1, document2):
+	"""
+	Given 2 Frappe Documents, are there significant differences between them?
+	  * Ignore creation and modified datetime differences.
+	  * Ignore '__unsaved' attribute.
+	"""
+	differences = list(dictdiffer.diff(document1.as_dict(), document2.as_dict()))
+	diff_remaining = []
+	for diff in differences:
+		if diff[1] == 'creation':
+			continue
+		if diff[1] == 'modified':
+			continue
+		if diff[2] == [('__unsaved', 1)]:
+			continue
+		diff_remaining.append(diff)
+	# print(f"Differences Remaining:\n{diff_remaining}")
+	if len(diff_remaining) > 0:
+		return True
+	return False
 
+
+def dprint(message, enabled=False):
+	"""
+	Quick hack for printing when I need to, without fussing with a bunch of comments.
+	"""
+	if enabled:
+		print(message)
