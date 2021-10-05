@@ -1196,7 +1196,6 @@ def call(fn, *args, **kwargs):
 		fn = get_attr(fn)
 
 	newargs = get_newargs(fn, kwargs)
-
 	return fn(*args, **newargs)
 
 def get_newargs(fn, kwargs):
@@ -1858,9 +1857,13 @@ def whatis(message, backend=True, frontend=True):
 	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
 	"""
 	import inspect
-	caller_function = inspect.stack()[2][3]
+	inspected_stack = inspect.stack()
+	caller_function = inspected_stack[2][3]
+	caller_path = inspected_stack[2][1]
+	caller_line = inspected_stack[2][2]
 	message_type = str(type(message)).replace('<', '').replace('>', '')
-	msg = f"---> DEBUG\n  * Value: {message}\n  * Type: {message_type}\n  * Caller: {caller_function}\n"
+	msg = f"---> DEBUG\n  * Value: {message}\n  * Type: {message_type}"
+	msg += f"\n  * Caller: {caller_function}\n  * Caller Path: {caller_path}\n  * Caller Line: {caller_line}\n"
 	if backend:
 		print(msg)
 	if frontend:
@@ -1877,8 +1880,15 @@ def debug_decorator(func):
 	def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
 		print(f'{"-"*30}')
 		print(f'Function: {func.__name__}\nRun on: {datetime.today().strftime("%Y-%m-%d %H:%M:%S")}')
-		caller = inspect.stack()[1][3]
-		callers_caller = inspect.stack()[2][3]
+		stack_inspection = inspect.stack()
+		if len(stack_inspection) >= 1:
+			caller = stack_inspection[1][3]
+		else:
+			caller = None
+		if len(stack_inspection) >= 2:
+			callers_caller = stack_inspection[2][3]
+		else:
+			callers_caller = None
 		print(f"Caller: '{caller}'' via '{callers_caller}'")
 		func(*args, **kwargs)
 		print(f'{"-"*30}')
