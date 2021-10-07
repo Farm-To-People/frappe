@@ -232,6 +232,7 @@ class Document(BaseDocument):
 		self.set_docstatus()
 		self.check_if_latest()
 		self.run_method("before_insert")
+		self._prevalidate_links()	# Datahenge, need a means of running some additional code first.
 		self._validate_links()
 		self.set_new_name(set_name=set_name, set_child_names=set_child_names)
 		self.set_parent_in_children()
@@ -319,7 +320,8 @@ class Document(BaseDocument):
 		self.set_name_in_children()
 
 		self.validate_higher_perm_levels()
-		self._validate_links()
+		self._prevalidate_links()	# DH: Need to introduce a way of running Document-based code, prior to Link validation.
+		self._validate_links()  # note: this call also validates the Links of child documents.
 		self.run_before_save_methods()
 
 		if self._action != "cancel":
@@ -822,6 +824,14 @@ class Document(BaseDocument):
 			fields=", ".join((each[0] for each in missing)),
 			doctype=self.doctype,
 			name=self.name))
+
+	def _prevalidate_links(self, **kwargs):
+		# Datahenge: An opportunity to execute some code, just prior to Link validation.
+		# This is useful is situations where you know Links might be a problem.
+		# And you want a change to do some pre-cleaning first.
+		for doc in self.get_all_children():
+			doc.run_method("_prevalidate_links", parent_doc=self)
+
 
 	def _validate_links(self):
 		if self.flags.ignore_links or self._action == "cancel":
@@ -1382,6 +1392,29 @@ class Document(BaseDocument):
 	# -------------------------------
 	# DATHENGE: Magic Happens Here:
 	# -------------------------------
+
+	def before_validate_children(self, child_docfield_name):
+		"""
+		Run the 'before_validate' code on all Child Documents.
+		NOTE: If Child document will be inserted, run its 'before_insert' function also.
+		"""
+		if not isinstance(child_docfield_name, str):
+			raise ValueError("Argument 'child_docfield_name' should be a String.")
+		for child_doc in self.get(child_docfield_name):
+			if child_doc.is_new():
+					child_doc.before_insert(parent_doc=self)
+			child_doc.before_validate(parent_doc=self)
+
+	def on_trash_children(self, child_docfield_name):
+		"""
+		If the parent document is pending deletion, cascade the 'on_trash' function to the child documents.
+		"""
+		if not isinstance(child_docfield_name, str):
+			raise ValueError("Argument 'child_docfield_name' should be a String.")
+		for child_doc in self.get(child_docfield_name):
+			child_doc.on_trash(parent_doc=self)
+
+
 	def on_update_children(self, child_docfield_name, debug=False):
 		"""
 		This function analyzes a Parent's child records, and based on CRUD, intelligently calls Child DocType controllers.
@@ -1414,10 +1447,11 @@ class Document(BaseDocument):
 		                 if child_orig.name not in [ child.name for child in current_child_records]
 		               ]
 		if docs_deleted:
-			# Scenario 3A: Prexisting child documents were Deleted
+			# Scenario 3A: Pre-existing child documents were Deleted
 			for deleted_doc in docs_deleted:
 				dprint(f"* Scenario 3: Child document of type '{deleted_doc.doctype}' was Deleted.\n", debug)
-				deleted_doc.after_delete(parent_doc=self)  # execute the Controller method 'after_delete' for this Child record.
+				deleted_doc.on_trash(parent_doc=self)  # call the Controller method 'on_trash' for this Child record.
+				deleted_doc.after_delete(parent_doc=self)  # call the Controller method 'after_delete' for this Child record.
 
 		# Loop through all the children post-update:
 		for child_doc in current_child_records:
@@ -1441,16 +1475,15 @@ class Document(BaseDocument):
 				dprint(f"* Scenario 6: Pre-existing Child record {child_doc.name} was Untouched.\n", debug)
 
 
-	def validate_children(self, child_docfield_names):
+	def validate_child_doctype(self, child_docfield_name, **kwargs):
 		"""
 		Datahenge: A controller function for validating Child Doctypes.
 		"""
-		if not isinstance(child_docfield_names, list):
-			raise ValueError("Argument 'child_docfield_names' should be a List of Strings.")
+		if not isinstance(child_docfield_name, str):
+			raise ValueError("Argument 'child_docfield_name' should be a String.")
 
-		for docfield_name in child_docfield_names:
-			for child_doc in self.get(docfield_name):
-				child_doc.validate(parent_doc=self)
+		for child_doc in self.get(child_docfield_name):
+			child_doc.validate(parent_doc=self, **kwargs)
 
 
 def execute_action(doctype, name, action, **kwargs):

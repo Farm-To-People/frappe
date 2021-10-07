@@ -102,6 +102,7 @@ def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reloa
 
 				# check if links exist
 				if not force:
+					# Datahenge: Link checks that are tripping up Web Subscription Items.
 					check_if_doc_is_linked(doc)
 					check_if_doc_is_dynamically_linked(doc)
 
@@ -220,7 +221,7 @@ def check_permission_and_not_submitted(doc):
 
 def check_if_doc_is_linked(doc, method="Delete"):
 	"""
-		Raises excption if the given doc(dt, dn) is linked in another record.
+		Raises exception if the given doc(dt, dn) is linked in another record.
 	"""
 	from frappe.model.rename_doc import get_link_fields
 	link_fields = get_link_fields(doc.doctype)
