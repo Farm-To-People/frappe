@@ -479,7 +479,11 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			},
 			no_spinner: true,
 			callback: (r) => {
-				if (r.message=='Ok') {
+				// Datahenge: New way of skipping Link Validation, when not appropriate.
+				if (df.ignore_link_validation) {
+					resolve(value);
+				}
+				else if (r.message=='Ok') {
 					if (r.fetch_values && docname) {
 						this.set_fetch_values(df, docname, r.fetch_values);
 					}

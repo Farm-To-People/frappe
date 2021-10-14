@@ -63,7 +63,8 @@
   "column_break_22",
   "description",
   "oldfieldname",
-  "oldfieldtype"
+  "oldfieldtype",
+  "ignore_link_validation"
  ],
  "fields": [
   {
@@ -489,13 +490,20 @@
    "fieldname": "reqd_in_database",
    "fieldtype": "Check",
    "label": "Mandatory only in DB"
+  },
+  {
+   "default": "0",
+   "description": "When marked, a DocField of type Link will accept any value, regardless of whether it's a valid Link.",
+   "fieldname": "ignore_link_validation",
+   "fieldtype": "Check",
+   "label": "Ignore Link Validation"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2021-09-20 17:48:27.493248",
+ "modified": "2021-10-11 20:09:52.648983",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

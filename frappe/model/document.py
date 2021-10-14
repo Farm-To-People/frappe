@@ -2,15 +2,21 @@
 # MIT License. See license.txt
 
 from __future__ import unicode_literals, print_function
-import frappe
+
+import hashlib
+import json
 import time
+
+# Datahenge
+import dictdiffer  # A library for finding the difference between 2 Python dictionaries.
+from six import iteritems, string_types
+from werkzeug.exceptions import NotFound, Forbidden
+
+import frappe
 from frappe import _, msgprint, is_whitelisted
 from frappe.utils import flt, cstr, now, get_datetime_str, file_lock, date_diff
 from frappe.model.base_document import BaseDocument, get_controller
 from frappe.model.naming import set_new_name
-from six import iteritems, string_types
-from werkzeug.exceptions import NotFound, Forbidden
-import hashlib, json
 from frappe.model import optional_fields, table_fields
 from frappe.model.workflow import validate_workflow
 from frappe.model.workflow import set_workflow_state_on_action
@@ -20,8 +26,8 @@ from frappe.desk.form.document_follow import follow_document
 from frappe.core.doctype.server_script.server_script_utils import run_server_script_for_doc_event
 from frappe.utils.data import get_absolute_url
 
-# Datahenge
-import dictdiffer  # A library for finding the difference between 2 Python dictionaries.
+
+# pylint: disable=invalid-name
 
 # once_only validation
 # methods
@@ -200,7 +206,7 @@ class Document(BaseDocument):
 
 	def raise_no_permission_to(self, perm_type):
 		"""Raise `frappe.PermissionError`."""
-		frappe.flags.error_message = _('Insufficient Permission for {0}').format(self.doctype)
+		frappe.flags.error_message = _('Insufficient Permission for DocType = {0}').format(self.doctype)
 		raise frappe.PermissionError
 
 	def insert(self, ignore_permissions=None, ignore_links=None, ignore_if_duplicate=False,
@@ -825,10 +831,12 @@ class Document(BaseDocument):
 			doctype=self.doctype,
 			name=self.name))
 
-	def _prevalidate_links(self, **kwargs):
-		# Datahenge: An opportunity to execute some code, just prior to Link validation.
+	def _prevalidate_links(self, **kwargs):  # pylint: disable=unused-argument
+		"""
+		Datahenge: An opportunity to execute some code, just prior to Link validation.
 		# This is useful is situations where you know Links might be a problem.
 		# And you want a change to do some pre-cleaning first.
+		"""
 		for doc in self.get_all_children():
 			doc.run_method("_prevalidate_links", parent_doc=self)
 
@@ -1393,6 +1401,15 @@ class Document(BaseDocument):
 	# DATHENGE: Magic Happens Here:
 	# -------------------------------
 
+	DH_DEBUG = False
+
+	def summarize_children(self, prefix=None):
+		print("\n--------")
+		for d in self.get_all_children():
+			print(f"* {prefix or ''} Child Record.  DocType: {d.doctype}, ID: {d.name}")
+		print("--------\n")
+
+
 	def before_validate_children(self, child_docfield_name):
 		"""
 		Run the 'before_validate' code on all Child Documents.
@@ -1405,6 +1422,7 @@ class Document(BaseDocument):
 					child_doc.before_insert(parent_doc=self)
 			child_doc.before_validate(parent_doc=self)
 
+
 	def on_trash_children(self, child_docfield_name):
 		"""
 		If the parent document is pending deletion, cascade the 'on_trash' function to the child documents.
@@ -1415,7 +1433,7 @@ class Document(BaseDocument):
 			child_doc.on_trash(parent_doc=self)
 
 
-	def on_update_children(self, child_docfield_name, debug=False):
+	def on_update_children(self, child_docfield_name, debug=DH_DEBUG):
 		"""
 		This function analyzes a Parent's child records, and based on CRUD, intelligently calls Child DocType controllers.
 		"""
@@ -1430,6 +1448,7 @@ class Document(BaseDocument):
 				return
 			for child_record in current_child_records:
 				dprint(f"* Scenario 1, New Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})", debug)
+				child_record.after_insert(parent_doc=self)
 				child_record.on_update(parent_doc=self)
 			return
 
@@ -1455,27 +1474,30 @@ class Document(BaseDocument):
 
 		# Loop through all the children post-update:
 		for child_doc in current_child_records:
+
 			if child_doc.name not in [ child_orig.name for child_orig in original_child_records]:
 				# Scenario 3B: Some child documents were Inserted.
-				dprint(f"* Scenario 4: Child document of type '{child_doc.doctype}' was Inserted.\n", debug)
+				dprint(f"* Scenario 4: Child with identifier '{child_doc.name}' was Inserted.", debug)
+				# self.summarize_children("1")
 				child_doc.after_insert(parent_doc=self)
+				# self.summarize_children("2")
 				child_doc.on_update(parent_doc=self)
 				child_doc.on_change(parent_doc=self)
-				continue
+				continue  # Move to next child record.
 
 			# Child record existed before & after; compare them.
 			child_orig = next(iter([ child_orig for child_orig in original_child_records if child_orig.name == child_doc.name ]))
 
 			if _exist_significant_differences(child_orig, child_doc):
 				# Scenario 2C: Some child document was Modified.
-				dprint(f"* Scenario 5: Pre-existing Child record {child_doc.name} was Modified.\n", debug)
+				dprint(f"* Scenario 5: Child with identifier '{child_doc.name}' was Modified.\n", debug)
 				child_doc.on_update(parent_doc=self)
 				child_doc.on_change(parent_doc=self)
 			else:
-				dprint(f"* Scenario 6: Pre-existing Child record {child_doc.name} was Untouched.\n", debug)
+				dprint(f"* Scenario 6: Child with identifier '{child_doc.name}' was Untouched.\n", debug)
 
 
-	def validate_child_doctype(self, child_docfield_name, **kwargs):
+	def validate_children(self, child_docfield_name, **kwargs):
 		"""
 		Datahenge: A controller function for validating Child Doctypes.
 		"""
@@ -1485,6 +1507,9 @@ class Document(BaseDocument):
 		for child_doc in self.get(child_docfield_name):
 			child_doc.validate(parent_doc=self, **kwargs)
 
+# ------------------
+# Non-Class methods:
+# ------------------
 
 def execute_action(doctype, name, action, **kwargs):
 	"""Execute an action on a document (called by background worker)"""
@@ -1533,3 +1558,4 @@ def dprint(message, enabled=False):
 	"""
 	if enabled:
 		print(message)
+

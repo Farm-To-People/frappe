@@ -555,6 +555,10 @@ class BaseDocument(object):
 				+ self.meta.get("fields", {"fieldtype": ('=', "Dynamic Link")})):
 			docname = self.get(df.fieldname)
 
+			if bool(df.ignore_link_validation):  # Datahenge: Do not validate this link's referential integrity.
+				# print(f"Ignoring link {df.fieldname} in DocType {df.doctype}")
+				continue
+
 			if docname:
 				if df.fieldtype=="Link":
 					doctype = df.options

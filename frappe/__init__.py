@@ -10,6 +10,9 @@ be used to build database driven apps.
 
 Read the documentation: https://frappeframework.com/docs
 """
+
+# pylint: disable=assigning-non-slot,invalid-name,redefined-outer-name, wrong-import-position
+
 import os, warnings
 
 _dev_server = os.environ.get('DEV_SERVER', False)
@@ -1847,7 +1850,7 @@ def validate_and_sanitize_search_inputs(fn):
 	return func(fn)
 
 # Datahenge
-# I tried guerilla patching this in FTP's hooks.py.
+# I tried guerilla patching 'whatis()' in FTP's hooks.py.
 # The result was inconsistent.  For example, I could not run automation.py code
 # using `bench execute`, because the Bench wasn't aware of the patched Frappe module.
 # This guerilla patching simply isn't worth the effort.  Hard-coding the function here, for now.
@@ -1856,7 +1859,6 @@ def whatis(message, backend=True, frontend=True):
 	"""
 	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
 	"""
-	import inspect
 	inspected_stack = inspect.stack()
 	caller_function = inspected_stack[2][3]
 	caller_path = inspected_stack[2][1]
@@ -1875,7 +1877,6 @@ def whatis(message, backend=True, frontend=True):
 def debug_decorator(func):
 	'''Log the date and time of a function'''
 	from datetime import datetime
-	import inspect
 
 	def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
 		print(f'{"-"*30}')
