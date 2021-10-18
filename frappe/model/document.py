@@ -27,7 +27,7 @@ from frappe.core.doctype.server_script.server_script_utils import run_server_scr
 from frappe.utils.data import get_absolute_url
 
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, disable=protected-access
 
 # once_only validation
 # methods
