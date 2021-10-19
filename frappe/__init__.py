@@ -1847,25 +1847,51 @@ def mock(type, size=1, locale='en'):
 
 def validate_and_sanitize_search_inputs(fn):
 	from frappe.desk.search import validate_and_sanitize_search_inputs as func
-	return func(fn)
+	return func(fn)  # pylint: disable=no-value-for-parameter
 
+# -------------------------
 # Datahenge
+# -------------------------
+
 # I tried guerilla patching 'whatis()' in FTP's hooks.py.
 # The result was inconsistent.  For example, I could not run automation.py code
 # using `bench execute`, because the Bench wasn't aware of the patched Frappe module.
 # This guerilla patching simply isn't worth the effort.  Hard-coding the function here, for now.
+
+def print_caller():
+	"""
+	A function for printing the Caller at any point in Python code.
+	"""
+
+	# Because this function itself was called, we must fetch the results of the caller's caller.
+	indirect_caller = inspect.stack()[2]
+	indirect_caller_path = indirect_caller[1]
+	indirect_caller_line = indirect_caller[2]
+	msg =  f"\n  * Caller Path: {indirect_caller_path}"
+	msg += f"\n  * Caller Line: {indirect_caller_line}\n"
+	print(msg)
+
 
 def whatis(message, backend=True, frontend=True):
 	"""
 	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
 	"""
 	inspected_stack = inspect.stack()
-	caller_function = inspected_stack[2][3]
-	caller_path = inspected_stack[2][1]
-	caller_line = inspected_stack[2][2]
+
+	direct_caller = inspected_stack[1]
+	direct_caller_linenum = direct_caller[2]
+
+	parent_caller = inspected_stack[2]
+	parent_caller_function = parent_caller[3]
+	parent_caller_path = parent_caller[1]
+	parent_caller_line = parent_caller[2]
+
 	message_type = str(type(message)).replace('<', '').replace('>', '')
-	msg = f"---> DEBUG\n  * Value: {message}\n  * Type: {message_type}"
-	msg += f"\n  * Caller: {caller_function}\n  * Caller Path: {caller_path}\n  * Caller Line: {caller_line}\n"
+	msg = f"---> DEBUG (frappe.whatis)\n"
+	msg += f"* Initiated on Line: {direct_caller_linenum}"
+	msg += f"\n  * Value: {message}\n  * Type: {message_type}"
+	msg += f"\n  * Caller: {parent_caller_function}"
+	msg += f"\n  * Caller Path: {parent_caller_path}\n  * Caller Line: {parent_caller_line}\n"
 	if backend:
 		print(msg)
 	if frontend:
