@@ -571,7 +571,7 @@ class BaseDocument(object):
 
 				# MySQL is case insensitive. Preserve case of the original docname in the Link Field.
 
-				# get a map of values ot fetch along with this link query
+				# get a map of values to fetch along with this link query
 				# that are mapped as link_fieldname.source_fieldname in Options of
 				# Readonly or Data or Text type fields
 
@@ -591,8 +591,13 @@ class BaseDocument(object):
 							for _df in fields_to_fetch]
 
 						# don't cache if fetching other values too
-						values = frappe.db.get_value(doctype, docname,
-							values_to_fetch, as_dict=True)
+						values = frappe.db.get_value(doctype, docname, values_to_fetch, as_dict=True)
+
+						# Datahenge:  This seems like a pretty HUGE hole in the framework.
+						if not values:
+							print(f"Datahenge: Cannot find DocType '{doctype} with name '{docname}'")
+							invalid_links.append((df.fieldname, docname, get_msg(df, docname)))
+						# Datahenge: End
 
 				if frappe.get_meta(doctype).issingle:
 					values.name = doctype
