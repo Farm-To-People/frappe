@@ -842,7 +842,8 @@ class Document(BaseDocument):
 
 
 	def _validate_links(self):
-		if self.flags.ignore_links or self._action == "cancel":
+		if self.flags.ignore_links or \
+			(hasattr(self, '_action') and self._action == "cancel"):  # Datahenge: Sometimes you want to Validate Links without an Action.
 			return
 
 		invalid_links, cancelled_links = self.get_invalid_links()
@@ -1394,7 +1395,7 @@ class Document(BaseDocument):
 		return f"{doctype}({name})"
 
 	def get_parent_doc(self):
-		# Datahenge: Surprising this doesn't already exist.
+		# Datahenge: Very surprising this doesn't already exist.
 		return frappe.get_doc(self.parenttype, self.parent)
 
 	# -------------------------------

@@ -595,7 +595,7 @@ class BaseDocument(object):
 
 						# Datahenge:  This seems like a pretty HUGE hole in the framework.
 						if not values:
-							print(f"Datahenge: Cannot find DocType '{doctype} with name '{docname}'")
+							# print(f"Datahenge: Cannot find DocType '{doctype}' with name = '{docname}'")
 							invalid_links.append((df.fieldname, docname, get_msg(df, docname)))
 						# Datahenge: End
 

@@ -578,12 +578,12 @@ class Database(object):
 			`tabSingles` where `doctype`=%s and `field`=%s""", (doctype, fieldname))
 		val = val[0][0] if val else None
 
-		df = frappe.get_meta(doctype).get_field(fieldname)
-
-		if not df:
+		docfield_metadata = frappe.get_meta(doctype).get_field(fieldname)
+		if not docfield_metadata:
 			frappe.throw(_('Invalid field name: {0}').format(frappe.bold(fieldname)), self.InvalidColumnName)
 
-		val = cast_fieldtype(df.fieldtype, val)
+		# Datahenge:  This is another Holy Shit moment:  The datatype for None dates was CHANGING into Today's Date!
+		val = cast_fieldtype(docfield_metadata.fieldtype, val)
 
 		# TODO:  Datahenge:  I have No Idea why repeating this check is necessary here.  The same thing
 		#        happens only 10 lines above.  But if I don't?  Then 'bench execute' fails with KeyError: 'Global Defaults'
@@ -602,7 +602,9 @@ class Database(object):
 		"""Alias for get_single_value"""
 		# Datahenge: No purpose having an alias, and it's rarely used.
 		import warnings
-		warnings.warn("This function is deprecated, using 'get_single_value' instead.", DeprecationWarning)
+		message = "Function 'get_singles_value' is deprecated, using 'get_single_value' instead."
+		frappe.throw(message, exc=None)
+		warnings.warn(message, DeprecationWarning)
 		return self.get_single_value(*args, **kwargs)
 
 	def _get_values_from_table(self, fields, filters, doctype, as_dict, debug, order_by=None, update=None, for_update=False):

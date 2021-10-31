@@ -511,7 +511,7 @@ def cast_fieldtype(fieldtype, value):
 	if fieldtype in ("Currency", "Float", "Percent"):
 		value = flt(value)
 
-	elif fieldtype in ("Int", "Check"):
+	elif fieldtype in ("Int", "Check"):  # TODO: Datahenge:  Seems VERY likely that we could switch Check to 'boolean' and get better results?
 		value = cint(value)
 
 	elif fieldtype in ("Data", "Text", "Small Text", "Long Text",
@@ -519,10 +519,22 @@ def cast_fieldtype(fieldtype, value):
 		value = cstr(value)
 
 	elif fieldtype == "Date":
-		value = getdate(value)
+		# Datahenge:  MAJOR BUG.  If you pass a 'None' to this function, it was returning the Current Datetime!
+		# This is insane.  No Date means NO DATE.  It doesn't mean cast the current datetime, and return it.
+		# Hey Frappe?  Creating a cute getdate() function with 2 Inherently Different Behaviors is BAD BUSINESS.
+		# FML
+		# value = getdate(value)  # Datahenge: WHOA!  If you pass a None to this, it was designed to return the Current Datetime!!!
+		if value is None:
+			return None  # Nothing != Today   :eyeroll:
+		else:
+			return getdate(value)
 
 	elif fieldtype == "Datetime":
-		value = get_datetime(value)
+		# Datahenge: Same as above, for goodness sake.
+		if value is None:
+			return None
+		else:
+			value = get_datetime(value)
 
 	elif fieldtype == "Time":
 		value = to_timedelta(value)
