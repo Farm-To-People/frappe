@@ -129,7 +129,8 @@ class Database(object):
 		self.clear_db_table_cache(query)
 
 		# autocommit
-		if auto_commit: self.commit()
+		if auto_commit:
+			self.commit()
 
 		# execute
 		try:
