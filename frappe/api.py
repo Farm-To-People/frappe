@@ -13,6 +13,8 @@ from frappe import _
 from frappe.utils.response import build_response
 from frappe.utils.data import sbool
 
+from frappe.model.document import Document as DocumentType
+from six import iteritems
 # Datahenge: See line 98.
 
 def handle():
@@ -89,6 +91,11 @@ def handle():
 					if "flags" in data:
 						del data["flags"]
 
+					# Datahenge: Need to check if the new values are allowable for a PUT.
+					# For example, assume a DocField is 'READ ONLY', but a new value is passed in the PUT.
+					# Instead of silently rejecting and returning a 200, we need to return an HTTP 403.
+					can_update_dh(doc, new_data=data)
+
 					# Not checking permissions here because it's checked in doc.save
 					doc.update(data)
 
@@ -157,12 +164,13 @@ def handle():
 					data.update({"doctype": doctype})
 
 					# Farm To People, Datahenge
-					# I cannot believe this isn't standard code.
-					# On POST, if a 'name' is passed, but the record already exists?  ERROR OUT!
+					# Hard to believe this is not standard code.  During POST, if a 'name' is passed,
+					# but a record with that name already exists?  Throw an Error.
 					if 'name' in data:
 						if frappe.db.exists(doctype, data['name']):
-							raise frappe.NameError(f"Record with name '{data['name']}' already exists.")
+							raise frappe.NameError(f"API Error: Calling POST with a 'name' value ({data['name']}) that already exists.")
 					# End of Fix
+
 					# insert document from request data
 					doc = frappe.get_doc(data).insert()
 
@@ -286,3 +294,35 @@ def validate_api_key_secret(api_key, api_secret, frappe_authorization_source=Non
 def validate_auth_via_hooks():
 	for auth_hook in frappe.get_hooks('auth_hooks', []):
 		frappe.get_attr(auth_hook)()
+
+
+
+def can_update_dh(doc, new_data):
+	"""
+	Datahenge: Logic to be called during a PUT, to prevent updating of Read Only fields.
+	"""
+
+	# Arguments:
+		# doc: 			Document attempting to modify.
+		# new_data		a Frappe Dictionary of new values.
+
+	if not isinstance(doc, DocumentType):
+		raise TypeError("Argument 'doc' is not an instance of Document.")
+
+	meta = frappe.get_meta(doc.doctype, cached=False)
+	docfield_meta = meta.get("fields")  # a List of DocField
+
+	for key, new_value in iteritems(new_data):
+		current_value = doc.get(key)
+		if new_value != current_value:
+			# print(f"Attempting to change value of {key} from '{current_value}' to '{new_value}'")
+			try:
+				docfield = next(field for field in docfield_meta if field.fieldname == key)
+			except StopIteration as ex:
+				raise ValueError(f"No such field '{key}' exists in document {doc.doctype}.") from ex
+
+			# If trying a PUT on a read-only field, throw an error.
+			if docfield.fieldtype == 'Read Only':
+				raise frappe.MethodNotAllowed(f"Cannot modify the value of a 'Read Only' column '{key}' via API PUT.")
+			if bool(docfield.read_only) is True:
+				raise frappe.MethodNotAllowed(f"Cannot modify the value of a 'read_only' column '{key}' via API PUT.")
