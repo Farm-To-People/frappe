@@ -141,6 +141,12 @@ class Document(BaseDocument):
 		frappe.whitelist()(fn)
 		return fn
 
+	@staticmethod
+	def safelist(fn):
+		"""Decorator: Safelist method to be called remotely via REST API."""
+		frappe.whitelist()(fn)
+		return fn
+
 	def reload(self):
 		"""Reload document from database"""
 		self.load_from_db()
@@ -1507,6 +1513,16 @@ class Document(BaseDocument):
 
 		for child_doc in self.get(child_docfield_name):
 			child_doc.validate(parent_doc=self, **kwargs)
+
+	def set_parent_doc(self, parent_doc=None):
+		"""
+		Datahenge: Function to assign a class variable 'parent_doc' of type Document Class.
+		"""
+		if self.parent_doc:  # scenario 1, already previously set.
+			return
+		if parent_doc:  # scenario 2, provided as an argument
+			self.parent_doc = parent_doc
+		parent_doc = self.get_parent_doc()  # scenario 3, find using SQL.
 
 # ------------------
 # Non-Class methods:

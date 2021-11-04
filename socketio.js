@@ -101,6 +101,7 @@ io.on('connection', function (socket) {
 	});
 
 	socket.on('doc_subscribe', function (doctype, docname) {
+		/* Datahenge: Disabling for performance reasons; ERPNext Chat Rooms are deprecated anyway
 		can_subscribe_doc({
 			socket,
 			sid,
@@ -111,6 +112,7 @@ io.on('connection', function (socket) {
 				socket.join(room);
 			}
 		});
+		*/
 	});
 
 	socket.on('doc_unsubscribe', function (doctype, docname) {
@@ -124,6 +126,7 @@ io.on('connection', function (socket) {
 	});
 
 	socket.on('doc_open', function (doctype, docname) {
+		/* Datahenge: Disabling unnecessary call.
 		can_subscribe_doc({
 			socket,
 			sid,
@@ -154,6 +157,7 @@ io.on('connection', function (socket) {
 				);
 			}
 		});
+		*/
 	});
 
 	socket.on('doc_close', function (doctype, docname) {

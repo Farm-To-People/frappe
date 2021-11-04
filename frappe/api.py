@@ -94,7 +94,8 @@ def handle():
 					# Datahenge: Need to check if the new values are allowable for a PUT.
 					# For example, assume a DocField is 'READ ONLY', but a new value is passed in the PUT.
 					# Instead of silently rejecting and returning a 200, we need to return an HTTP 403.
-					can_update_dh(doc, new_data=data)
+					if not can_update_dh(doc, new_data=data):
+						return build_response("json")
 
 					# Not checking permissions here because it's checked in doc.save
 					doc.update(data)
@@ -296,7 +297,6 @@ def validate_auth_via_hooks():
 		frappe.get_attr(auth_hook)()
 
 
-
 def can_update_dh(doc, new_data):
 	"""
 	Datahenge: Logic to be called during a PUT, to prevent updating of Read Only fields.
@@ -312,9 +312,12 @@ def can_update_dh(doc, new_data):
 	meta = frappe.get_meta(doc.doctype, cached=False)
 	docfield_meta = meta.get("fields")  # a List of DocField
 
+	payload_contains_changes = False  # if nothing is changing, don't bother with the PUT
+
 	for key, new_value in iteritems(new_data):
 		current_value = doc.get(key)
 		if new_value != current_value:
+			payload_contains_changes = True
 			# print(f"Attempting to change value of {key} from '{current_value}' to '{new_value}'")
 			try:
 				docfield = next(field for field in docfield_meta if field.fieldname == key)
@@ -326,3 +329,10 @@ def can_update_dh(doc, new_data):
 				raise frappe.MethodNotAllowed(f"Cannot modify the value of a 'Read Only' column '{key}' via API PUT.")
 			if bool(docfield.read_only) is True:
 				raise frappe.MethodNotAllowed(f"Cannot modify the value of a 'read_only' column '{key}' via API PUT.")
+
+	# TODO: Not 100% confident this is safe, when it comes to complex PUT payloads
+	#if not payload_contains_changes:
+	#	print("FYI, payload of PUT contains no changes to data.")
+	#	return False
+
+	return True

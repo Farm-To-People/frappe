@@ -13,8 +13,9 @@ Read the documentation: https://frappeframework.com/docs
 
 # pylint: disable=assigning-non-slot,invalid-name,redefined-outer-name, wrong-import-position
 
-import os, warnings
-
+import os
+import warnings
+from enum import Enum  # Datahenge: Attempt at a more-flexible print function
 _dev_server = os.environ.get('DEV_SERVER', False)
 
 if _dev_server:
@@ -586,6 +587,37 @@ def whitelist(allow_guest=False, xss_safe=False, methods=None):
 		@frappe.whitelist()
 		def myfunc(param1, param2):
 			pass
+	"""
+
+	if not methods:
+		methods = ['GET', 'POST', 'PUT', 'DELETE']
+
+	def innerfn(fn):
+		global whitelisted, guest_methods, xss_safe_methods, allowed_http_methods_for_whitelisted_func
+
+		# get function from the unbound / bound method
+		# this is needed because functions can be compared, but not methods
+		method = None
+		if hasattr(fn, '__func__'):
+			method = fn
+			fn = method.__func__
+
+		whitelisted.append(fn)
+		allowed_http_methods_for_whitelisted_func[fn] = methods
+
+		if allow_guest:
+			guest_methods.append(fn)
+
+			if xss_safe:
+				xss_safe_methods.append(fn)
+
+		return method or fn
+
+	return innerfn
+
+def safelist(allow_guest=False, xss_safe=False, methods=None):
+	"""
+	Datahenge: 100% identical to whitelist above, but new name.
 	"""
 
 	if not methods:
@@ -1920,3 +1952,38 @@ def debug_decorator(func):
 		func(*args, **kwargs)
 		print(f'{"-"*30}')
 	return wrapper
+
+
+# Datahenge: Attempt at a more-flexible print function
+class YPrintLevel(Enum):
+	Console = 1
+	Web = 2
+	All = 3
+
+
+def yprint(message, print_level=YPrintLevel.Console, with_conditions=False, conditions=None):
+	"""
+	Datahenge: a smarter print() function.  Avoids sprinkling IF-ELSE statements in ERPNext code.
+	"""
+
+	if not message:
+		return
+	if not print_level:
+		return
+
+	if isinstance(print_level, str):
+		print_level =YPrintLevel[print_level]  # convert from String to Enum (JavaScript code may be passing this argument)
+
+	if (with_conditions is True) and not conditions:
+		# Datahenge: Would like to accomplish this with a single variable, but concerned about None and "truthiness"
+		return
+
+	if print_level in (YPrintLevel.Console, YPrintLevel.All):
+		print(message)  # print to console
+	if print_level in (YPrintLevel.Web, YPrintLevel.All):
+		msgprint(message)  # print to web browser pop-up
+
+
+def clear_console():
+	os.system('clear')
+	print()  # extra line helps keep statements aligned
