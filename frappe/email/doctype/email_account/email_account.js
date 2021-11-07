@@ -121,6 +121,13 @@ frappe.ui.form.on("Email Account", {
 			delete frappe.route_flags.delete_user_from_locals;
 			delete locals['User'][frappe.route_flags.linked_user];
 		}
+
+		// Datahenge: Begin
+		frm.add_custom_button(__('Send Test Email'), function() {
+			send_test_email(frm);
+		});
+		// Datahenge: End
+
 	},
 
 	show_gmail_message_for_less_secure_apps: function(frm) {
@@ -205,3 +212,76 @@ frappe.ui.form.on("Email Account", {
 		}
 	}
 });
+
+
+
+function send_test_email(frm) {
+
+	let me = this;
+
+	const title = __("Test Email Account by Sending a Message");
+	const fields = [
+		{
+			fieldname: 'recipients',
+			fieldtype:'Data',
+			label: __('Recipients:'),
+			reqd: 1
+		}
+	];
+
+	var this_dialog = new frappe.ui.Dialog({
+		title: title,
+		fields: fields
+	});
+
+	this_dialog.set_primary_action(__('Update'), function() {
+		const dialog_data = this_dialog.get_values();
+		frappe.call({
+			method:"frappe.core.doctype.communication.email.make",
+			args: {
+				recipients: dialog_data.recipients,
+				subject: "Test Email from ERPNext",
+				content: "This is a Test Email from " + frm.doc.name,
+				send_email: 1,
+				print_html: 1,
+				send_me_a_copy: 0,
+				sender: frm.doc.email_id,
+				read_receipt: 0,
+			},
+			callback(r) {
+				if (!r.exc) {
+					frappe.utils.play_sound("email");
+
+					if (r.message["emails_not_sent_to"]) {
+						frappe.msgprint(__("Email not sent to {0} (unsubscribed / disabled)",
+							[ frappe.utils.escape_html(r.message["emails_not_sent_to"]) ]) );
+					}
+				} else {
+					console.log(r);
+					frappe.msgprint(__("There were errors while sending email. Please try again."));
+					// try the error callback if it exists
+					if (r.error) {
+						console.log(e); // eslint-disable-line
+					}
+				}
+			} //end of callback block
+		});
+		this_dialog.hide();
+		/*
+		frappe.call({
+			'method': 'ftp.ftp_api.api.update_customer_emailid',
+			'args': {
+				'current_email_id': frm.doc.email_id,
+				'new_email_id': dialog_data.new_email_address,
+			},
+			'callback': (r) => {
+				frm.reload_doc();
+				frappe.msgprint("Email address updated.")
+			}
+		});
+		this_dialog.hide();
+		*/
+
+	});
+	this_dialog.show();
+}
