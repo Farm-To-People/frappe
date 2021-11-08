@@ -1636,6 +1636,8 @@ def get_field_differences(doc_before, doc_after,
 	exclude_paths = []
 	if ignore_modified:
 		exclude_paths.append("root['modified']")  # ignore and strip 'modified' from the results.
+		exclude_paths.append("root['modified_by']")  # ignore and strip 'modified_by' from the results.
+
 	if ignore_list:
 		for each in ignore_list:
 			exclude_paths.append(f"root['{each}']")
