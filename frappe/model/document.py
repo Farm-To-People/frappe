@@ -120,6 +120,7 @@ class Document(BaseDocument):
 					self.flags.for_update = kwargs.get('for_update')
 
 			self.load_from_db()
+			# Datahenge: Would be lovely to set the 'parent_doc' here, but we run into infinite recursion  :/
 			return
 
 		if args and args[0] and isinstance(args[0], dict):
@@ -130,6 +131,11 @@ class Document(BaseDocument):
 			# init base document
 			super(Document, self).__init__(kwargs)
 			self.init_valid_columns()
+
+			# Datahenge: Would be lovely to set the 'parent_doc' here, but we run into infinite recursion  :/
+			# if self.parent and self.doctype not in ["DocField","DocPerm","DocType Link","Has Role",
+			#                                       "Custom DocPerm","DocType Action"]:
+				# self.set_parent_doc()
 
 		else:
 			# incorrect arguments. let's not proceed.
@@ -845,8 +851,7 @@ class Document(BaseDocument):
 		# And you want a change to do some pre-cleaning first.
 		"""
 		for doc in self.get_all_children():
-			doc.run_method("_prevalidate_links", parent_doc=self)
-
+			doc.run_method("_prevalidate_links", _parent_doc=self)
 
 	def _validate_links(self):
 		if self.flags.ignore_links or \
@@ -1402,8 +1407,13 @@ class Document(BaseDocument):
 		return f"{doctype}({name})"
 
 	def get_parent_doc(self):
+		"""
+		Return a document's parent document.
+		"""
 		# Datahenge: Very surprising this doesn't already exist.
-		return frappe.get_doc(self.parenttype, self.parent)
+		if self.parenttype and self.parent:
+			return frappe.get_doc(self.parenttype, self.parent)	
+		raise ValueError(f"Document '{self.name}' of type '{self.doctype}' does not have a parent Document.")
 
 	# -------------------------------
 	# DATHENGE: Magic Happens Here:
@@ -1416,7 +1426,6 @@ class Document(BaseDocument):
 		Returns a True if this document is a child DocType.
 		"""
 		return bool(frappe.get_meta(self.doctype).istable)  # the poorly-named 'istable' DocType metadata
-
 
 	def summarize_children(self, prefix=None):
 		"""
@@ -1440,9 +1449,10 @@ class Document(BaseDocument):
 		if not isinstance(child_docfield_name, str):
 			raise ValueError("Argument 'child_docfield_name' should be a String.")
 		for child_doc in self.get(child_docfield_name):
-			if child_doc.is_new():
-				child_doc.before_insert(parent_doc=self)
-			child_doc.before_validate(parent_doc=self)
+			if child_doc.is_new() and hasattr(child_doc, 'before_insert'):
+				child_doc.before_insert(_parent_doc=self)
+			if hasattr(child_doc, 'before_validate'):
+				child_doc.before_validate(_parent_doc=self)
 
 	def validate_children(self, child_docfield_name, **kwargs):
 		"""
@@ -1452,7 +1462,19 @@ class Document(BaseDocument):
 			raise ValueError("Argument 'child_docfield_name' should be a String.")
 
 		for child_doc in self.get(child_docfield_name):
-			child_doc.validate(parent_doc=self, **kwargs)
+			if hasattr(child_doc, 'validate'):
+				child_doc.validate(_parent_doc=self, **kwargs)
+
+	def before_save_children(self, child_docfield_name, **kwargs):
+		"""
+		Datahenge: A controller function for validating Child Doctypes.
+		"""
+		if not isinstance(child_docfield_name, str):
+			raise ValueError("Argument 'child_docfield_name' should be a String.")
+
+		for child_doc in self.get(child_docfield_name):
+			if hasattr(child_doc, 'before_save'):
+				child_doc.before_save(_parent_doc=self, **kwargs)
 
 	# --------
 	# DELETION
@@ -1465,7 +1487,8 @@ class Document(BaseDocument):
 		if not isinstance(child_docfield_name, str):
 			raise ValueError("Argument 'child_docfield_name' should be a String.")
 		for child_doc in self.get(child_docfield_name):
-			child_doc.on_trash(parent_doc=self)
+			if hasattr(child_doc, 'on_trash'):
+				child_doc.on_trash(_parent_doc=self)
 
 	def after_delete_children(self, child_docfield_name):
 		"""
@@ -1474,7 +1497,8 @@ class Document(BaseDocument):
 		if not isinstance(child_docfield_name, str):
 			raise ValueError("Argument 'child_docfield_name' should be a String.")
 		for child_doc in self.get(child_docfield_name):
-			child_doc.after_delete(parent_doc=self)
+			if hasattr(child_doc, 'after_delete'):
+				child_doc.after_delete(_parent_doc=self)
 
 	# --------
 	# UPDATES
@@ -1495,8 +1519,8 @@ class Document(BaseDocument):
 				return
 			for child_record in current_child_records:
 				dprint(f"* Scenario 1, New Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})", debug)
-				child_record.after_insert(parent_doc=self)
-				child_record.on_update(parent_doc=self)
+				child_record.after_insert(_parent_doc=self)
+				child_record.on_update(_parent_doc=self)
 			return
 
 		original_child_records = doc_orig.get(child_docfield_name)
@@ -1518,9 +1542,9 @@ class Document(BaseDocument):
 			for deleted_doc in docs_deleted:
 				dprint(f"* Scenario 3: Child document of type '{deleted_doc.doctype}' was Deleted.\n", debug)
 				if hasattr(deleted_doc, 'on_trash'):
-					deleted_doc.on_trash(parent_doc=self)  # call controller method 'on_trash' for this Child record.
+					deleted_doc.on_trash(_parent_doc=self)  # call controller method 'on_trash' for this Child record.
 				if hasattr(deleted_doc, 'after_delete'):
-					deleted_doc.after_delete(parent_doc=self)  # call controller method 'after_delete' for this Child record.
+					deleted_doc.after_delete(_parent_doc=self)  # call controller method 'after_delete' for this Child record.
 
 		# Loop through all the children post-update:
 		for child_doc in current_child_records:
@@ -1529,11 +1553,11 @@ class Document(BaseDocument):
 				# Scenario 3B: Some child documents were Inserted.
 				dprint(f"* Scenario 4: Child with identifier '{child_doc.name}' was Inserted.", debug)
 				if hasattr(child_doc, 'after_insert'):
-					child_doc.after_insert(parent_doc=self)
+					child_doc.after_insert(_parent_doc=self)
 				if hasattr(child_doc, 'on_update'):
-					child_doc.on_update(parent_doc=self)
+					child_doc.on_update(_parent_doc=self)
 				if hasattr(child_doc, 'on_change'):
-					child_doc.on_change(parent_doc=self)
+					child_doc.on_change(_parent_doc=self)
 				continue  # Move to next child record.
 
 			# Child record existed before & after; compare them.
@@ -1543,30 +1567,34 @@ class Document(BaseDocument):
 				# Scenario 2C: Some child document was Modified.
 				dprint(f"* Scenario 5: Child with identifier '{child_doc.name}' was Modified.\n", debug)
 				if hasattr(child_doc, 'on_update'):
-					child_doc.on_update(parent_doc=self)
+					child_doc.on_update(_parent_doc=self)
 				if hasattr(child_doc, 'on_change'):
-					child_doc.on_change(parent_doc=self)
+					child_doc.on_change(_parent_doc=self)
 			else:
 				dprint(f"* Scenario 6: Child with identifier '{child_doc.name}' was Untouched.\n", debug)
 
 
-	def set_parent_doc(self, parent_doc=None):
+	def set_parent_doc(self, _parent_doc=None):
 		"""
 		Datahenge: Function to assign a class variable 'parent_doc' of type Document Class.
 		"""
+		# validate_datatype('parent_doc', _parent_doc, Document, mandatory=True)
+
 		# Scenario 1:  Value of 'parent_doc' was previously set as a class attribute.
 		if hasattr(self, 'parent_doc') and self.parent_doc:
 			return
 
-		if parent_doc:  # scenario 2, provided as an argument
-			self.parent_doc = parent_doc
+		if _parent_doc:  # scenario 2, provided as an argument
+			self.parent_doc = _parent_doc
 
 		# Scenario 3: Find the parent using SQL
-		parent_doc = self.get_parent_doc()
-		self.parent_doc = parent_doc
+		self.parent_doc = self.get_parent_doc()
+
+		if not self.parent_doc:
+			raise ValueError(f"Function 'set_parent_doc()' was unable to find a parent for calling Document {self.doctype} - {self.name}")
 
 
-	def as_child_get_original_doc(self, parent_doc=None):
+	def as_child_get_original_doc(self, _parent_doc=None):
 		"""
 		Return a copy of the original Child Document, prior to changes.
 		"""
@@ -1578,16 +1606,16 @@ class Document(BaseDocument):
 
 		calling_mode = 'Proxy' if caller_is_proxy() else 'Classic'
 		if calling_mode not in ['Proxy', 'Classic']:
-			raise ValueError("Invalid value for 'calling_mode' in get_doc_orig()")
+			raise ValueError("Invalid value for argument 'calling_mode' in Function 'as_child_get_original_doc()'")
 
 		# Called directly via Web Proxy
 		if calling_mode == 'Proxy':
 			return self.get_doc_before_save()
 
 		# Classic
-		if not parent_doc:
+		if not _parent_doc:
 			raise ValueError("Function 'get_doc_orig' requires mandatory argument 'parent_doc', when called in Classic mode.")
-		parent_orig = parent_doc.get_doc_before_save()
+		parent_orig = _parent_doc.get_doc_before_save()
 		if not parent_orig:
 			return None
 		try:
@@ -1646,8 +1674,19 @@ def get_field_differences(doc_before, doc_after,
 
 	diff = DeepDiff(before, after, exclude_paths=exclude_paths)
 	if error_on_type_changes and ('type_changes' in diff.keys()):
-		raise TypeError("Error during comparison of Web Subscription Item (Before vs. Current).\
-Field datatypes changed Before vs. After.")
+		type_changes = diff['type_changes']
+		if isinstance(type_changes, dict):
+			# Scenario 1: 'type_changes' are a Dictionary:
+			for key in type_changes.keys():
+				old_type = type_changes[key]['old_type']
+				new_type = type_changes[key]['new_type']
+				NoneType = type(None)
+				if (old_type == NoneType) or (new_type == NoneType):
+					frappe.whatis("SKIPPING!")
+					continue  # It's okay if 1 type is a None
+				raise TypeError(f"In function 'get_field_differences(), datatypes changed (Before vs. Current). {diff['type_changes']}")
+		else:
+			raise TypeError(f"In function 'get_field_differences(), datatypes changed (Before vs. Current). {diff['type_changes']}")
 
 	# print(f"\nvalue of diff = \n{diff.to_dict()}\n")
 	return diff
