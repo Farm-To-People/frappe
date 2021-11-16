@@ -1031,8 +1031,6 @@ class Document(BaseDocument):
 		- `on_cancel` for **Cancel**
 		- `update_after_submit` for **Update after Submit**"""
 
-		doc_before_save = self.get_doc_before_save()
-
 		if self._action=="save":
 			self.run_method("on_update")
 		elif self._action=="submit":
@@ -1484,6 +1482,7 @@ class Document(BaseDocument):
 		"""
 		If the parent document is pending deletion, cascade the 'on_trash' function to the child documents.
 		"""
+		self.set("__indelete", True)  # Indicates to the child document that parent is undergoing deletion.
 		if not isinstance(child_docfield_name, str):
 			raise ValueError("Argument 'child_docfield_name' should be a String.")
 		for child_doc in self.get(child_docfield_name):
@@ -1519,8 +1518,10 @@ class Document(BaseDocument):
 				return
 			for child_record in current_child_records:
 				dprint(f"* Scenario 1, New Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})", debug)
-				child_record.after_insert(_parent_doc=self)
-				child_record.on_update(_parent_doc=self)
+				if hasattr(child_record, 'after_insert'):
+					child_record.after_insert(_parent_doc=self)
+				if hasattr(child_record, 'on_update'):					
+					child_record.on_update(_parent_doc=self)
 			return
 
 		original_child_records = doc_orig.get(child_docfield_name)

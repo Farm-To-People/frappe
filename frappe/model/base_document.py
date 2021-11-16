@@ -446,7 +446,8 @@ class BaseDocument(object):
 			# Datahenge:
 			# The problem with printing a separate message, before the Exception, is you cannot suppress it
 			# by catching in an outer exception...
-			frappe.msgprint(_("SQL constraint '{0}' requires unique values".format(label or fieldname)))
+			frappe.msgprint(e)
+			# frappe.msgprint(_("SQL constraint '{0}' requires unique values".format(label or fieldname)))
 
 		# this is used to preserve traceback
 		raise frappe.UniqueValidationError(self.doctype, self.name, e)
