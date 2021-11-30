@@ -182,13 +182,14 @@ def make_form_dict(request):
 	import json
 
 	request_data = request.get_data(as_text=True)
+
 	if 'application/json' in (request.content_type or '') and request_data:
 		args = json.loads(request_data)
 	else:
 		args = request.form or request.args
 
 	if not isinstance(args, dict):
-		frappe.throw("Invalid request arguments")
+		frappe.throw(f"Invalid request arguments: {args}")
 
 	try:
 		frappe.local.form_dict = frappe._dict({ k:v[0] if isinstance(v, (list, tuple)) else v \
