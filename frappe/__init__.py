@@ -1015,6 +1015,9 @@ def get_module_path(module, *joins):
 	:param module: Module name.
 	:param *joins: Join additional path elements using `os.path.join`."""
 	module = scrub(module)
+	# Datahenge: Let's provide some better feedback.  This often happens on Renaming a module.
+	if not module in local.module_app.keys():
+		raise KeyError(f"Cannot find module '{module}' in object 'local.module_app'.  Review the contents of 'modules.txt' in the App directory.")
 	return get_pymodule_path(local.module_app[module] + "." + module, *joins)
 
 def get_app_path(app_name, *joins):

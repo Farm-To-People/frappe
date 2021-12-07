@@ -257,8 +257,8 @@ class Document(BaseDocument):
 		self.validate_higher_perm_levels()
 
 		self.flags.in_insert = True
-		self.run_before_save_methods()
-		self._validate()
+		self._validate()  # Flipped, was the second call
+		self.run_before_save_methods()  # Flipped, was the first call
 		self.set_docstatus()
 		self.flags.in_insert = False
 
@@ -340,10 +340,19 @@ class Document(BaseDocument):
 		self.validate_higher_perm_levels()
 		self._prevalidate_links()	# DH: Need to introduce a way of running Document-based code, prior to Link validation.
 		self._validate_links()  # note: this call also validates the Links of child documents.
-		self.run_before_save_methods()
 
+		# --------
+		# Datahenge:
+		# --------
+		# I have deliberately switched the positions of:
+		# 		run_before_save_methods()
+		# 		_self._validate()
+  		#
+		# Why?  Because it's crazy otherwise.  Because then validate() would be called before any
+		# Link Validation or Mandatory fields were checked.
 		if self._action != "cancel":
-			self._validate()
+			self._validate()	# This will call useful validations like Links and Mandatory fields
+		self.run_before_save_methods()  # This call will call the custom, developer method "validate()"
 
 		if self._action == "update_after_submit":
 			self.validate_update_after_submit()
@@ -410,7 +419,7 @@ class Document(BaseDocument):
 				and name not in ({1})""".format(df.options, ','.join(['%s'] * len(rows))),
 					[self.name, self.doctype, fieldname] + rows)
 			if len(deleted_rows) > 0:
-				# delete rows that do not match the ones in the document
+				# Delete rows that no longer exist in the document.
 				frappe.db.sql("""delete from `tab{0}` where name in ({1})""".format(df.options,
 					','.join(['%s'] * len(deleted_rows))), tuple(row[0] for row in deleted_rows))
 
@@ -522,6 +531,7 @@ class Document(BaseDocument):
 			d.docstatus = self.docstatus
 
 	def _validate(self):
+		self.load_doc_before_save()  # Datahenge: Moving here to ensure it's always called.
 		self._validate_mandatory()
 		self._validate_data_fields()
 		self._validate_selects()
@@ -1647,14 +1657,17 @@ def execute_action(doctype, name, action, **kwargs):
 		doc.notify_update()
 
 
+# ------------------
+# Datahenge Additions:
+# ------------------
+
 def get_field_differences(doc_before, doc_after,
                           error_on_type_changes=True,
                           ignore_modified=True,
 						  ignore_list=None):
 	"""
-	Given 2 documents, compare values, and return a DeepDiff object.
+	Datahenge: Given 2 documents, compare values, and return a DeepDiff object.
 	"""
-	# Datahenge LLC
 	from deepdiff import DeepDiff
 	from ftp.ftp_module.generics import doc_to_stringtyped_dict
 
@@ -1695,7 +1708,7 @@ def get_field_differences(doc_before, doc_after,
 
 def _exist_significant_differences(document1, document2):
 	"""
-	Given 2 Frappe Documents, are there significant differences between them?
+	Given 2 Frappe Documents, are there -significant- differences between them?
 	  * Ignore creation and modified datetime differences.
 	  * Ignore '__unsaved' attribute.
 	  * NOTE: Must handle insanity that is Dates and Datetimes switching data-types midstream :eyeroll:
@@ -1720,7 +1733,36 @@ def _exist_significant_differences(document1, document2):
 
 def dprint(message, enabled=False):
 	"""
-	Quick hack for printing when I need to, without fussing with a bunch of comments.
+	Datahenge: Quick hack for printing when needed, without fussing with a bunch of comments.
 	"""
 	if enabled:
 		print(message)
+
+# --------
+# Datahenge
+# --------
+
+def get_document_datafield_names(doctype_name, include_child_tables=True):
+	"""
+	Purpose: Given any DocType's name, return the field names that are truly SQL fields.
+	Datahenge: Once again, shocking this isn't part of standard Frappe framework.
+	"""
+	from frappe.model import default_fields, table_fields, data_fieldtypes
+
+	# A bit of syntax explanation: we're merging 2 lists.
+	# The first is tuple 'default_fields' converted to a list.
+	# The second is list comprehension, the DocFields for this DocType that are 'data_fieldtypes'
+	# Finally, sort them.
+
+	result = list(default_fields)
+
+	result += [ docfield.fieldname for docfield in frappe.get_meta(doctype_name).fields
+	            if docfield.fieldtype in data_fieldtypes]
+
+	# Although a "Table" is not actually a SQL column, it's commonly passed as part of a JSON payload
+	# when calling REST APIs.  Since that's what I designed this for, it's good to include them by default.
+	if include_child_tables:
+		result += [ docfield.fieldname for docfield in frappe.get_meta(doctype_name).fields
+					if docfield.fieldtype in table_fields]
+
+	return sorted(result)

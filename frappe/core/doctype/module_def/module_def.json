@@ -38,6 +38,7 @@
   },
   {
    "default": "0",
+   "description": "When Custom is chosen, the Module is *not* saved to git repository.",
    "fieldname": "custom",
    "fieldtype": "Check",
    "label": "Custom"
@@ -55,7 +56,7 @@
    "link_fieldname": "module"
   }
  ],
- "modified": "2020-08-06 12:39:30.740379",
+ "modified": "2021-12-04 15:31:42.324623",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Module Def",

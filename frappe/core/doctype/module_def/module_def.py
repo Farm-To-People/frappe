@@ -14,6 +14,7 @@ class ModuleDef(Document):
 		if not self.custom and frappe.conf.get("developer_mode"):
 			self.create_modules_folder()
 			self.add_to_modules_txt()
+			frappe.msgprint("Created a directory for the new module, and addded to 'modules.txt'")
 
 	def create_modules_folder(self):
 		"""Creates a folder `[app]/[module]` and adds `__init__.py`"""
