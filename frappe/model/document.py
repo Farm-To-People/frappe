@@ -8,7 +8,7 @@ import json
 import time
 
 # Datahenge
-import dictdiffer  # A library for finding the difference between 2 Python dictionaries.
+# import dictdiffer  # A library for finding the difference between 2 Python dictionaries.
 from six import iteritems, string_types
 from werkzeug.exceptions import NotFound, Forbidden
 
@@ -17,7 +17,7 @@ from frappe import _, msgprint, is_whitelisted
 from frappe.utils import flt, cstr, now, get_datetime_str, file_lock, date_diff
 from frappe.model.base_document import BaseDocument, get_controller
 from frappe.model.naming import set_new_name
-from frappe.model import optional_fields, table_fields
+from frappe.model import optional_fields, table_fields, default_fields, data_fieldtypes
 from frappe.model.workflow import validate_workflow
 from frappe.model.workflow import set_workflow_state_on_action
 from frappe.utils.global_search import update_global_search
@@ -1530,7 +1530,7 @@ class Document(BaseDocument):
 				dprint(f"* Scenario 1, New Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})", debug)
 				if hasattr(child_record, 'after_insert'):
 					child_record.after_insert(_parent_doc=self)
-				if hasattr(child_record, 'on_update'):					
+				if hasattr(child_record, 'on_update'):
 					child_record.on_update(_parent_doc=self)
 			return
 
@@ -1747,15 +1747,12 @@ def get_document_datafield_names(doctype_name, include_child_tables=True):
 	Purpose: Given any DocType's name, return the field names that are truly SQL fields.
 	Datahenge: Once again, shocking this isn't part of standard Frappe framework.
 	"""
-	from frappe.model import default_fields, table_fields, data_fieldtypes
-
 	# A bit of syntax explanation: we're merging 2 lists.
 	# The first is tuple 'default_fields' converted to a list.
 	# The second is list comprehension, the DocFields for this DocType that are 'data_fieldtypes'
 	# Finally, sort them.
 
 	result = list(default_fields)
-
 	result += [ docfield.fieldname for docfield in frappe.get_meta(doctype_name).fields
 	            if docfield.fieldtype in data_fieldtypes]
 
