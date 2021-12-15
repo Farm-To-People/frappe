@@ -539,7 +539,7 @@ class BaseDocument(object):
 				if not self.get(fieldname):
 					missing.append((fieldname, get_msg(frappe._dict(label=fieldname))))
 
-		return missing
+		return list(set(missing))  # Datahenge: De-duplicate this.
 
 	def get_invalid_links(self, is_submittable=False):
 		"""Returns list of invalid links and also updates fetch values if not set"""

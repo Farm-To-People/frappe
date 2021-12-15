@@ -258,7 +258,7 @@ class Document(BaseDocument):
 
 		self.flags.in_insert = True
 		self._validate()  # Flipped, was the second call
-		self.run_before_save_methods()  # Flipped, was the first call
+		self.run_before_save_methods()  # Flipped, was the first call.  This calls Custom Controllers, like validate()
 		self.set_docstatus()
 		self.flags.in_insert = False
 
@@ -349,10 +349,11 @@ class Document(BaseDocument):
 		# 		_self._validate()
   		#
 		# Why?  Because it's crazy otherwise.  Because then validate() would be called before any
-		# Link Validation or Mandatory fields were checked.
+		# Link Validation or Mandatory fields were checked!  Your custom Controller code could be dealing with
+		# unexpected NULLs, or broken links.
 		if self._action != "cancel":
 			self._validate()	# This will call useful validations like Links and Mandatory fields
-		self.run_before_save_methods()  # This call will call the custom, developer method "validate()"
+		self.run_before_save_methods()  # This calls Custom Controllers, like validate()
 
 		if self._action == "update_after_submit":
 			self.validate_update_after_submit()
