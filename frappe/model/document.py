@@ -257,8 +257,11 @@ class Document(BaseDocument):
 		self.validate_higher_perm_levels()
 
 		self.flags.in_insert = True
+
+		self.run_before_validate_methods()  # Datahenge: New function.
 		self._validate()  # Flipped, was the second call
 		self.run_before_save_methods()  # Flipped, was the first call.  This calls Custom Controllers, like validate()
+
 		self.set_docstatus()
 		self.flags.in_insert = False
 
@@ -351,6 +354,8 @@ class Document(BaseDocument):
 		# Why?  Because it's crazy otherwise.  Because then validate() would be called before any
 		# Link Validation or Mandatory fields were checked!  Your custom Controller code could be dealing with
 		# unexpected NULLs, or broken links.
+
+		self.run_before_validate_methods()  # Datahenge: before_validate() must happen early.
 		if self._action != "cancel":
 			self._validate()	# This will call useful validations like Links and Mandatory fields
 		self.run_before_save_methods()  # This calls Custom Controllers, like validate()
@@ -992,6 +997,17 @@ class Document(BaseDocument):
 		"""Delete document."""
 		frappe.delete_doc(self.doctype, self.name, ignore_permissions = ignore_permissions, flags=self.flags)
 
+	def run_before_validate_methods(self):
+		"""
+		Datahenge: Moving 'before_validate' in here, so we can do some work prior to 
+		           validating Links, Mandatory fields, and validate() calls.
+		"""
+		self.load_doc_before_save()
+		# before_validate method should be executed before ignoring validations
+		if self._action in ("save", "submit"):
+			self.run_method("before_validate")
+
+
 	def run_before_save_methods(self):
 		"""Run standard methods before  `INSERT` or `UPDATE`. Standard Methods are:
 
@@ -1005,9 +1021,7 @@ class Document(BaseDocument):
 		self.load_doc_before_save()
 		self.reset_seen()
 
-		# before_validate method should be executed before ignoring validations
-		if self._action in ("save", "submit"):
-			self.run_method("before_validate")
+		# Datahenge: Removed before_validate() here, because it was happening too late (after Link and Mandatory checks)
 
 		if self.flags.ignore_validate:
 			return
