@@ -231,7 +231,11 @@ def relevance_sorter(key, query, as_dict):
 @wrapt.decorator
 def validate_and_sanitize_search_inputs(fn, instance, args, kwargs):
 	kwargs.update(dict(zip(fn.__code__.co_varnames, args)))
-	sanitize_searchfield(kwargs['searchfield'])
+
+	# Datahenge: A key error is being thrown when working with Pricing Rule's item-specific prices.
+	# Not sure why.  In the meantime, going to improve this code:
+	if 'searchfield' not in kwargs:
+		return []
 	kwargs['start'] = cint(kwargs['start'])
 	kwargs['page_len'] = cint(kwargs['page_len'])
 
