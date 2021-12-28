@@ -109,6 +109,7 @@ def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reloa
 				# check if links exist
 				if not force:
 					# Datahenge: Link checks that are tripping up Web Subscription Items.
+					#            And also Daily Order parent and child lines that relate to each other.
 					check_if_doc_is_linked(doc)
 					check_if_doc_is_dynamically_linked(doc)
 

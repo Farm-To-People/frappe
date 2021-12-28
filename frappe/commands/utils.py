@@ -840,6 +840,13 @@ def rebuild_global_search(context, static_pages=False):
 	if not context.sites:
 		raise SiteNotSpecifiedError
 
+@click.command('stop')
+@pass_context
+def cmd_stop():
+	"""
+	TODO: Stop ERPNext on ports 8000 and 9000
+	"""
+	pass
 
 commands = [
 	build,
@@ -871,5 +878,6 @@ commands = [
 	bulk_rename,
 	add_to_email_queue,
 	rebuild_global_search,
-	run_parallel_tests
+	run_parallel_tests,
+	cmd_stop
 ]

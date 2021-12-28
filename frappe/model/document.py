@@ -446,10 +446,10 @@ class Document(BaseDocument):
 			return False
 		if not previous:
 			if debug:
-				print("No previous value found; returning a True.")
+				print(f"Warning: No previous value found for field '{fieldname}'; returning a True.")
 			return True
 		if debug:
-			print(f"Before: {previous.get(fieldname)}, After: {self.get(fieldname)}")
+			print(f"has_value_changed() Before: {previous.get(fieldname)}, After: {self.get(fieldname)}")
 		return previous.get(fieldname)!=self.get(fieldname) if previous else True
 
 	def set_new_name(self, force=False, set_name=None, set_child_names=True):
@@ -1552,7 +1552,7 @@ class Document(BaseDocument):
 
 		original_child_records = doc_orig.get(child_docfield_name)
 		if (not current_child_records) and (not original_child_records):
-			# Scenario 2: There are no children, and were not before.  Nothing to analyze.
+			# Scenario 2: There are no children now, and were not before.  Nothing to analyze.
 			dprint(f"* Scenario 2, Parent had/has no children of DocType {child_docfield_name}", debug)
 			return
 
@@ -1621,30 +1621,31 @@ class Document(BaseDocument):
 			raise ValueError(f"Function 'set_parent_doc()' was unable to find a parent for calling Document {self.doctype} - {self.name}")
 
 
-	def as_child_get_original_doc(self, _parent_doc=None):
+	def as_child_get_original_doc(self, _parent_doc=None, debug=True):
 		"""
 		Return a copy of the original Child Document, prior to changes.
+		* Custom function by Datahenge
 		"""
-		# Datahenge
 		from ftp.ftp_module.generics import caller_is_proxy  # deliberate late import (cross-module function)
-
 		if not self.is_child_doctype():
-			raise Exception("This function should only be called by Child doctypes.")
+			raise Exception("This function should only be called by Child DocTypes.")
 
-		calling_mode = 'Proxy' if caller_is_proxy() else 'Classic'
-		if calling_mode not in ['Proxy', 'Classic']:
-			raise ValueError("Invalid value for argument 'calling_mode' in Function 'as_child_get_original_doc()'")
+		# There are 3 possibilities we have to handle:
+		# 1. The child document was updated directly via a REST API call.
+		# 2. The child document was updated via the ERPNext website, as a member of a Parent.
+		# 3. The child document was updated by code using save()
 
-		# Called directly via Web Proxy
-		if calling_mode == 'Proxy':
-			return self.get_doc_before_save()
+		# This should handle Scenarios 1 and 3:
+		doc_before_save = self.get_doc_before_save()
+		if doc_before_save:
+			return doc_before_save
 
-		# Classic
+		# Scenario #2 - Updated on the ERPNext website as part of a parent.
 		if not _parent_doc:
-			raise ValueError("Function 'get_doc_orig' requires mandatory argument 'parent_doc', when called in Classic mode.")
+			raise ValueError("Function 'as_child_get_original_doc' requires argument 'parent_doc', when called via ERPNext Website.")
 		parent_orig = _parent_doc.get_doc_before_save()
 		if not parent_orig:
-			return None
+			return None  # parent is new, therefore no original child document.
 		try:
 			return next(iter([ line for line in parent_orig.items if line.name == self.name ]))
 		except StopIteration:

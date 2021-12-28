@@ -130,6 +130,9 @@ def handle():
 
 				if frappe.local.request.method == "DELETE":
 					# Not checking permissions here because it's checked in delete_doc
+					# Datahenge:
+					if doctype in ['Daily Order Item', 'Web Subscription Item']:
+						frappe.throw(f"Forbidden to delete document '{doctype}' using standard REST APIs.")
 					frappe.delete_doc(doctype, name, ignore_missing=False)
 					frappe.local.response.http_status_code = 202
 					frappe.local.response.message = "ok"
@@ -236,10 +239,10 @@ def validate_oauth(authorization_header):
 
 	try:
 		required_scopes = frappe.db.get_value("OAuth Bearer Token", token, "scopes").split(get_url_delimiter())
-		valid, oauthlib_request = get_oauth_server().verify_request(uri, http_method, body, headers, required_scopes)
+		valid, _ = get_oauth_server().verify_request(uri, http_method, body, headers, required_scopes)
 		if valid:
 			frappe.set_user(frappe.db.get_value("OAuth Bearer Token", token, "user"))
-			frappe.local.form_dict = form_dict
+			frappe.local.form_dict = form_dict  # pylint: disable=assigning-non-slot
 	except AttributeError:
 		pass
 
@@ -289,7 +292,7 @@ def validate_api_key_secret(api_key, api_secret, frappe_authorization_source=Non
 			user = frappe.db.get_value(doctype, doc, 'user')
 		if frappe.local.login_manager.user in ('', 'Guest'):
 			frappe.set_user(user)
-		frappe.local.form_dict = form_dict
+		frappe.local.form_dict = form_dict  # pylint: disable=assigning-non-slot
 
 
 def validate_auth_via_hooks():
@@ -312,7 +315,8 @@ def can_update_dh(doc, new_data):
 	meta = frappe.get_meta(doc.doctype, cached=False)
 	docfield_meta = meta.get("fields")  # a List of DocField
 
-	payload_contains_changes = False  # if nothing is changing, don't bother with the PUT
+	# Concept: If nothing in the payload is a CRUD, don't bother with the PUT
+	payload_contains_changes = False  # pylint: disable=unused-variable
 
 	for key, new_value in iteritems(new_data):
 		current_value = doc.get(key)
