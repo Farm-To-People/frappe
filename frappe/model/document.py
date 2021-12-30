@@ -1713,8 +1713,7 @@ def get_field_differences(doc_before, doc_after,
 				new_type = type_changes[key]['new_type']
 				NoneType = type(None)
 				if (old_type == NoneType) or (new_type == NoneType):
-					frappe.whatis("SKIPPING!")
-					continue  # It's okay if 1 type is a None
+					continue  # It's okay if either old or new is a NoneType
 				raise TypeError(f"In function 'get_field_differences(), datatypes changed (Before vs. Current). {diff['type_changes']}")
 		else:
 			raise TypeError(f"In function 'get_field_differences(), datatypes changed (Before vs. Current). {diff['type_changes']}")
