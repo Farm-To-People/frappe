@@ -997,6 +997,40 @@ class Document(BaseDocument):
 		"""Delete document."""
 		frappe.delete_doc(self.doctype, self.name, ignore_permissions = ignore_permissions, flags=self.flags)
 
+	def delete_improved(self, **kwargs):
+		"""
+		Datahenge: An improved and more-complete delete method.
+
+		kwargs:
+ 			force
+			ignore_doctypes
+			for_reload
+			ignore_permissions
+			flags
+			ignore_on_trash
+			ignore_missing
+			delete_permanently
+
+		This function was created because of the need to:
+			1. Ignore link validation when deleting Daily Order lines that are Farm Box parents (pointed at by adjacent Order Lines)
+			2. Pass custom flags like "delete_parent_if_empty" to Controller methods like on_trash() and after_delete()
+
+		This was not possible with out-of-the-box Frappe delete() or delete_doc()
+		"""
+		import frappe.model.delete_doc	as delete_doc_module
+
+		# One very-useful flag is the 'delete_parent_if_empty'
+		if not kwargs:
+			kwargs = {"flags": self.flags}
+		else:
+			kwargs['flags'] = self.flags
+
+		delete_doc_module.delete_doc(
+			self.doctype,
+			self.name,
+			**kwargs)
+
+
 	def run_before_validate_methods(self):
 		"""
 		Datahenge: Moving 'before_validate' in here, so we can do some work prior to 
