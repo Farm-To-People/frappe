@@ -657,7 +657,7 @@ def is_whitelisted(method):
 	is_guest = session['user'] == 'Guest'
 	if method not in whitelisted or is_guest and method not in guest_methods:
 		# Datahenge: Improving on Frappe's very-terse error message.
-		throw(_("Call to function not permitted (function is not safelisted, or allowed for Guest)"), PermissionError)
+		throw(_(f"Call to function ('{method}') not permitted (function is not safelisted, or allowed for Guest)"), PermissionError)
 		# EOM
 
 	if is_guest and method not in xss_safe_methods:
