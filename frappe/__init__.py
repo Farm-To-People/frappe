@@ -407,7 +407,11 @@ def msgprint(msg, title=None, raise_exception=0, as_table=False, as_list=False, 
 
 	# Datahenge: If the 'to_console' argument is set, this is an alternative to locals.flags
 	if (to_console or flags.print_messages) and out.message:
-		console_message = out.message.replace( "<br>", "\n")
+		if not isinstance(out.message, str):
+			console_message = str(out.message)  # sometimes the out.message is a Python List.
+		else:
+			console_message = out.message
+		console_message = console_message.replace( "<br>", "\n")
 		print(f"Message: {strip_html_tags(console_message)}")
 
 	if title:

@@ -216,7 +216,7 @@ frappe.ui.form.on("Email Account", {
 
 
 function send_test_email(frm) {
-
+	// Datahenge: Add the ability to test the Email Account.
 	let me = this;
 
 	const title = __("Test Email Account by Sending a Message");
