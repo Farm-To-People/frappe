@@ -86,6 +86,10 @@ def handle():
 					frappe.local.response.update({"data": doc})
 
 				if frappe.local.request.method=="PUT":
+					# Datahenge: Prevent front-end from doing a PUT directly.
+					if doctype in ['Daily Order Item', 'Daily Order', 'Web Subscription Item']:
+						frappe.throw(f"Forbidden to delete document '{doctype}' using standard REST APIs.")
+
 					data = get_request_form_data()
 
 					doc = frappe.get_doc(doctype, name)
