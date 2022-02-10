@@ -188,6 +188,9 @@ def get_html_and_style(doc, name=None, print_format=None, meta=None,
 	settings=None, templates=None):
 	"""Returns `html` and `style` of print format, used in PDF etc"""
 
+	# TODO: Why is this called 2 times?
+	# frappe.whatis("get_html_and_style")
+
 	if isinstance(doc, string_types) and isinstance(name, string_types):
 		doc = frappe.get_doc(doc, name)
 
