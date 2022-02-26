@@ -35,6 +35,7 @@ ldap3~=2.9
 mailchimp-marketing~=3.0.48
 mailchimp-transactional~=1.0.27
 markdown2~=2.4.0
+markupsafe==2.0.1
 maxminddb-geolite2==2018.703
 ndg-httpsclient~=0.5.1
 num2words~=0.5.10
