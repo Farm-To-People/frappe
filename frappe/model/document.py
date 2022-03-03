@@ -1655,12 +1655,12 @@ class Document(BaseDocument):
 			raise ValueError(f"Function 'set_parent_doc()' was unable to find a parent for calling Document {self.doctype} - {self.name}")
 
 
-	def as_child_get_original_doc(self, _parent_doc=None, debug=True):
+	def as_child_get_original_doc(self, _parent_doc=None):
 		"""
 		Return a copy of the original Child Document, prior to changes.
 		* Custom function by Datahenge
 		"""
-		from ftp.ftp_module.generics import caller_is_proxy  # deliberate late import (cross-module function)
+		# from ftp.ftp_module.generics import caller_is_proxy  # deliberate late import (cross-module function)
 		if not self.is_child_doctype():
 			raise Exception("This function should only be called by Child DocTypes.")
 
