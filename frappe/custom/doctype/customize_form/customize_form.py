@@ -448,6 +448,9 @@ class CustomizeForm(Document):
 
 	@frappe.whitelist()
 	def reset_to_defaults(self):
+		"""
+		This function resets a DocType's customizations back to the official, default values per JSON.
+		"""
 		if not self.doc_type:
 			return
 
@@ -463,6 +466,9 @@ class CustomizeForm(Document):
 		return any(map(in_field_group, ALLOWED_FIELDTYPE_CHANGE))
 
 def reset_customization(doctype):
+	"""
+	This function resets a DocType's customizations back to the official, default values per JSON.
+	"""
 	setters = frappe.get_all("Property Setter", filters={
 		'doc_type': doctype,
 		'field_name': ['!=', 'naming_series'],

@@ -230,6 +230,7 @@ def check_if_doc_is_linked(doc, method="Delete"):
 	"""
 		Raises exception if the given doc(dt, dn) is linked in another record.
 	"""
+	# TODO: Datahenge: Would be nice to introduce a "cascade" feature here, where Links are deleted when their parent is deleted.
 	from frappe.model.rename_doc import get_link_fields
 	link_fields = get_link_fields(doc.doctype)
 	link_fields = [[lf['parent'], lf['fieldname'], lf['issingle']] for lf in link_fields]

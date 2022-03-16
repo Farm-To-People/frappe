@@ -10,6 +10,10 @@ from frappe.core.doctype.activity_log.activity_log import add_authentication_log
 from six import string_types
 
 def update_feed(doc, method=None):
+	"""
+	Datahenge Notes: This function is called when Documents are created, deleted, etc.  See 'run_post_save_methods'
+	This is how the Activity Log table is populated.
+	"""
 	if frappe.flags.in_patch or frappe.flags.in_install or frappe.flags.in_import:
 		return
 

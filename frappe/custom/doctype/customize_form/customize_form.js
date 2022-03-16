@@ -296,6 +296,9 @@ frappe.customize_form.set_primary_action = function(frm) {
 };
 
 frappe.customize_form.confirm = function(msg, frm) {
+	/*
+		Datahenge: This is a terrible function name, but it means "Confirm Reset Changes"
+	*/
 	if (!frm.doc.doc_type) return;
 
 	var d = new frappe.ui.Dialog({
