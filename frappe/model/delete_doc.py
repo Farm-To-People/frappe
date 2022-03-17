@@ -271,6 +271,12 @@ def check_if_doc_is_dynamically_linked(doc, method="Delete"):
 
 		ignore_linked_doctypes = doc.get('ignore_linked_doctypes') or []
 
+		# Datahenge: Need a way to ignore linked doctypes, no matter what, even if method <> 'Cancel'
+		dh_ignore_linked_doctypes = doc.get('dh_ignore_linked_doctypes') or []
+		if df.parent in dh_ignore_linked_doctypes:
+			continue
+		# Datahenge: End
+
 		if df.parent in doctypes_to_skip or (df.parent in ignore_linked_doctypes and method == 'Cancel'):
 			# don't check for communication and todo!
 			continue
