@@ -1589,8 +1589,14 @@ def attach_print(doctype, name, file_name=None, print_format=None,
 	style=None, html=None, doc=None, lang=None, print_letterhead=True, password=None):
 	from frappe.utils import scrub_urls
 
-	if not file_name: file_name = name
-	file_name = file_name.replace(' ','').replace('/','-')
+	if not file_name:
+		file_name = name
+
+	if not file_name:
+		msgprint("attach_print() : Unable to determine a value for 'file_name'")
+		return
+	else:
+		file_name = file_name.replace(' ','').replace('/','-')
 
 	print_settings = db.get_singles_dict("Print Settings")
 
@@ -1893,7 +1899,7 @@ def validate_and_sanitize_search_inputs(fn):
 # Datahenge
 # -------------------------
 
-# I tried guerilla patching 'whatis()' in FTP's hooks.py.
+# I tried guerilla patching the 'whatis()' function in FTP's hooks.py.
 # The result was inconsistent.  For example, I could not run automation.py code
 # using `bench execute`, because the Bench wasn't aware of the patched Frappe module.
 # This guerilla patching simply isn't worth the effort.  Hard-coding the function here, for now.

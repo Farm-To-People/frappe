@@ -19,6 +19,8 @@ from frappe.utils.global_search import delete_for_document
 from frappe.desk.doctype.tag.tag import delete_tags_for_document
 from frappe.exceptions import FileNotFoundError
 
+DH_DEBUG_DELETE = False
+
 doctypes_to_skip = ("Communication", "ToDo", "DocShare", "Email Unsubscribe", "Activity Log", "File",
 	"Version", "Document Follow", "Comment" , "View Log", "Tag Link", "Notification Log", "Email Queue")
 
@@ -175,6 +177,9 @@ def delete_from_table(doctype, name, ignore_doctypes, doc):
 		frappe.db.sql("delete from `tabSingles` where `doctype`=%s", name)
 	else:
 		frappe.db.sql("delete from `tab{0}` where `name`=%s".format(doctype), name)
+
+	if DH_DEBUG_DELETE:
+		print(f"SQL DELETE ({doctype} : {name})")
 
 	# get child tables
 	if doc:

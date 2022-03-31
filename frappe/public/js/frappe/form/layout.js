@@ -490,6 +490,9 @@ frappe.ui.form.Layout = Class.extend({
 			}
 
 			if (f.df.read_only_depends_on) {
+				// Datahenge Note: In vanilla ERPNext, this won't immediately apply to fields in a Grid.
+				//                 You'd have to first 'Edit' the line, which opens a form, then this logic kicks in.
+				// This is a different behavior versus hard-coded Read Only fields, which are read-only on the grid -immediately-
 				this.set_dependant_property(f.df.read_only_depends_on, f.df.fieldname, 'read_only');
 			}
 		}

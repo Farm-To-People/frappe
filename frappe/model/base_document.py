@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 from six import iteritems, string_types
 import json
 
-
 import frappe
 import datetime
 from frappe import _
@@ -17,6 +16,10 @@ from frappe.model import display_fieldtypes
 from frappe.utils import (cint, flt, now, cstr, strip_html,
 	sanitize_html, sanitize_email, cast_fieldtype)
 from frappe.utils.html_utils import unescape_html
+
+DH_DEBUG_INSERT = False
+DH_DEBUG_UPDATE = False
+
 
 max_positive_value = {
 	'smallint': 2 ** 15,
@@ -374,6 +377,8 @@ class BaseDocument(object):
 					columns = ", ".join(["`"+c+"`" for c in columns]),
 					values = ", ".join(["%s"] * len(columns))
 				), list(d.values()))
+			if DH_DEBUG_INSERT:
+				print(f"SQL INSERT ({self.doctype} : {self.name})")
 		except Exception as e:
 			if frappe.db.is_primary_key_violation(e):
 				if self.meta.autoname=="hash":
@@ -416,6 +421,8 @@ class BaseDocument(object):
 					doctype = self.doctype,
 					values = ", ".join(["`"+c+"`=%s" for c in columns])
 				), list(d.values()) + [name])
+			if DH_DEBUG_UPDATE:
+				print(f"SQL UPDATE ({self.doctype} : {self.name})")
 		except Exception as e:
 			if frappe.db.is_unique_key_violation(e):
 				self.show_unique_validation_message(e)
@@ -958,8 +965,12 @@ class BaseDocument(object):
 		else:
 			return True
 
-	def reset_values_if_no_permlevel_access(self, has_access_to, high_permlevel_fields):
+	def reset_values_if_no_permlevel_access(self, has_access_to, high_permlevel_fields, throw_exceptions=True, debug=False):
 		"""If the user does not have permissions at permlevel > 0, then reset the values to original / default"""
+
+		# Datahenge : Adding some warning and debugging capability here.  Because this function and its caller
+		# provided zero feedback, I had no idea I was not successfully setting a Value on my DocType.
+
 		to_reset = []
 
 		for df in high_permlevel_fields:
@@ -978,8 +989,20 @@ class BaseDocument(object):
 				else:
 					ref_doc = self.get_latest()
 
+			changed_values_string = ""
 			for df in to_reset:
+				if (debug or throw_exceptions) and (self.get(df.fieldname) != ref_doc.get(df.fieldname)):
+					changed_values_string += f"\n    * '{df.fieldname}' changed from '{self.get(df.fieldname)}' to '{ref_doc.get(df.fieldname)}'"
 				self.set(df.fieldname, ref_doc.get(df.fieldname))
+
+			if changed_values_string:
+				if throw_exceptions:
+					changed_values_string = "The following fields are not modifiable due to Permissions:" + changed_values_string
+					raise ValueError(changed_values_string)
+
+				changed_values_string = "WARNING!  The following fields are not modifiable due to Permissions, and are RESET to Original Values:" + changed_values_string
+				frappe.msgprint(changed_values_string, to_console=True)
+
 
 	def get_value(self, fieldname):
 		df = self.meta.get_field(fieldname)

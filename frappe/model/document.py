@@ -340,7 +340,7 @@ class Document(BaseDocument):
 		self.set_parent_in_children()
 		self.set_name_in_children()
 
-		self.validate_higher_perm_levels()
+		self.validate_higher_perm_levels()  # DH: This function modified.
 		self._prevalidate_links()	# DH: Need to introduce a way of running Document-based code, prior to Link validation.
 		self._validate_links()  # note: this call also validates the Links of child documents.
 
@@ -356,9 +356,10 @@ class Document(BaseDocument):
 		# unexpected NULLs, or broken links.
 
 		self.run_before_validate_methods()  # Datahenge: before_validate() must happen early.
+
 		if self._action != "cancel":
 			self._validate()	# This will call useful validations like Links and Mandatory fields
-		self.run_before_save_methods()  # This calls Custom Controllers, like validate()
+		self.run_before_save_methods()  # This calls Document-specific Controller Methods, like validate()
 
 		if self._action == "update_after_submit":
 			self.validate_update_after_submit()
@@ -693,6 +694,7 @@ class Document(BaseDocument):
 			high_permlevel_fields = frappe.get_meta(df.options).get_high_permlevel_fields()
 			if high_permlevel_fields:
 				for d in self.get(df.fieldname):
+					# Datahenge: The call below can cause havoc if DocField permissions are not carefully set.
 					d.reset_values_if_no_permlevel_access(has_access_to, high_permlevel_fields)
 
 	def get_permlevel_access(self, permission_type='write'):
@@ -1033,7 +1035,7 @@ class Document(BaseDocument):
 
 	def run_before_validate_methods(self):
 		"""
-		Datahenge: Moving 'before_validate' in here, so we can do some work prior to 
+		Datahenge: Moving 'before_validate' in here, so we can do some work prior to
 		           validating Links, Mandatory fields, and validate() calls.
 		"""
 		self.load_doc_before_save()
@@ -1043,7 +1045,7 @@ class Document(BaseDocument):
 
 
 	def run_before_save_methods(self):
-		"""Run standard methods before  `INSERT` or `UPDATE`. Standard Methods are:
+		"""Run standard methods before `INSERT` or `UPDATE`. Standard Methods are:
 
 		- `validate`, `before_save` for **Save**.
 		- `validate`, `before_submit` for **Submit**.
@@ -1639,19 +1641,26 @@ class Document(BaseDocument):
 		"""
 		Datahenge: Function to assign a class variable 'parent_doc' of type Document Class.
 		"""
-		# validate_datatype('parent_doc', _parent_doc, Document, mandatory=True)
+		DEBUG = True
 
-		# Scenario 1:  Value of 'parent_doc' was previously set as a class attribute.
-		if hasattr(self, 'parent_doc') and self.parent_doc:
-			return
-
-		if _parent_doc:  # scenario 2, provided as an argument
+		# Scenario 1, an argument was provided, so accept it as fact, and apply it.
+		if _parent_doc:
 			self.parent_doc = _parent_doc
+			if DEBUG: print(f"Scenario 1: Argument for parent_doc() was passed (caller = {self.doctype}")
+			return self.parent_doc
 
-		# Scenario 3: Find the parent using SQL
+		# Scenario 2:  This document instance already has a previously set value; so use that.
+		if hasattr(self, 'parent_doc') and self.parent_doc:
+			if DEBUG: print(f"Scenario 2: parent_doc() previously set for this document. (caller = {self.doctype}")
+			return self.parent_doc
+
+		# Scenario 3: No choice but to try reading from the SQL database.
 		self.parent_doc = self.get_parent_doc()
+		if DEBUG: print(f"Scenario 3: Argument for parent_doc() fetched from SQL database. {self.doctype}")
 
-		if not self.parent_doc:
+		if self.parent_doc:
+			return self.parent_doc
+		else:
 			raise ValueError(f"Function 'set_parent_doc()' was unable to find a parent for calling Document {self.doctype} - {self.name}")
 
 

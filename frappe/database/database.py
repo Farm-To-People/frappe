@@ -26,6 +26,8 @@ from six import (
 	iteritems
 )
 
+DH_DEBUG_COMMIT = False
+
 class Database(object):
 	"""
 	   Open a database connection with the given parmeters, if use_default is True, use the
@@ -778,11 +780,18 @@ class Database(object):
 		self.sql("START TRANSACTION")
 
 	def commit(self):
+
 		"""Commit current transaction. Calls SQL `COMMIT`."""
+
+		# Datahenge: Would be nice to know the number of un-committed transactions at this point.
+		#            That appears to be difficult.  Perhaps another reason to transition to Postgres?
 		for method in frappe.local.before_commit:
 			frappe.call(method[0], *(method[1] or []), **(method[2] or {}))
 
 		self.sql("commit")
+
+		if DH_DEBUG_COMMIT:  # useful way of debugging when SQL COMMIT happens.
+			print("---> SQL COMMIT <---")
 
 		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 		self.flush_realtime_log()

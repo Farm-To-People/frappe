@@ -429,7 +429,7 @@ def send_one(email, smtpserver=None, auto_commit=True, now=False):
 
 			# to avoid always using default email account for outgoing
 			if getattr(frappe.local, "outgoing_email_account", None):
-				frappe.local.outgoing_email_account = {}
+				frappe.local.outgoing_email_account = {}  # pylint: disable=assigning-non-slot
 
 			smtpserver.setup_email_account(email.reference_doctype, sender=email.sender)
 
@@ -580,8 +580,9 @@ def prepare_message(email, recipient, recipients_list):
 			elif attachment.get("print_format_attachment") == 1:
 				attachment.pop("print_format_attachment", None)
 				print_format_file = frappe.attach_print(**attachment)
-				print_format_file.update({"parent": message})
-				add_attachment(**print_format_file)
+				if print_format_file:
+					print_format_file.update({"parent": message})
+					add_attachment(**print_format_file)
 
 	return safe_encode(message.as_string())
 
