@@ -52,6 +52,7 @@ def enqueue_events_for_all_sites():
 			enqueue_events_for_site(site=site)
 		except Exception as e:
 			print(e.__class__, 'Failed to enqueue events for site: {}'.format(site))
+			print(e)
 
 def enqueue_events_for_site(site):
 	def log_and_raise():
