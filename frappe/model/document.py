@@ -1641,22 +1641,25 @@ class Document(BaseDocument):
 		"""
 		Datahenge: Function to assign a class variable 'parent_doc' of type Document Class.
 		"""
-		DEBUG = True
+		DEBUG = False
 
 		# Scenario 1, an argument was provided, so accept it as fact, and apply it.
 		if _parent_doc:
 			self.parent_doc = _parent_doc
-			if DEBUG: print(f"Scenario 1: Argument for parent_doc() was passed (caller = {self.doctype}")
+			if DEBUG:
+				print(f"Scenario 1: Argument for parent_doc() was passed (caller = {self.doctype}")
 			return self.parent_doc
 
 		# Scenario 2:  This document instance already has a previously set value; so use that.
 		if hasattr(self, 'parent_doc') and self.parent_doc:
-			if DEBUG: print(f"Scenario 2: parent_doc() previously set for this document. (caller = {self.doctype}")
+			if DEBUG:
+				print(f"Scenario 2: parent_doc() previously set for this document. (caller = {self.doctype}")
 			return self.parent_doc
 
 		# Scenario 3: No choice but to try reading from the SQL database.
 		self.parent_doc = self.get_parent_doc()
-		if DEBUG: print(f"Scenario 3: Argument for parent_doc() fetched from SQL database. {self.doctype}")
+		if DEBUG:
+			print(f"Scenario 3: Argument for parent_doc() fetched from SQL database. {self.doctype}")
 
 		if self.parent_doc:
 			return self.parent_doc
