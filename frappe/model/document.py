@@ -1726,6 +1726,7 @@ def execute_action(doctype, name, action, **kwargs):
 
 def get_field_differences(doc_before, doc_after,
                           error_on_type_changes=True,
+						  ignore_creation=True,
                           ignore_modified=True,
 						  ignore_list=None):
 	"""
@@ -1739,6 +1740,10 @@ def get_field_differences(doc_before, doc_after,
 
 	# Create a list of fields to ignore, when calculating differences.
 	exclude_paths = []
+	if ignore_creation:
+		exclude_paths.append("root['creation']")  # ignore and strip 'creation' from the results.
+		exclude_paths.append("root['owner']")  # ignore and strip 'owner' from the results.
+
 	if ignore_modified:
 		exclude_paths.append("root['modified']")  # ignore and strip 'modified' from the results.
 		exclude_paths.append("root['modified_by']")  # ignore and strip 'modified_by' from the results.
