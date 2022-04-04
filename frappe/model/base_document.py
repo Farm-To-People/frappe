@@ -997,7 +997,7 @@ class BaseDocument(object):
 
 			if changed_values_string:
 				if throw_exceptions:
-					changed_values_string = "The following fields are not modifiable due to Permissions:" + changed_values_string
+					changed_values_string = f"For DocType {self.name}, the following fields are not modifiable due to Permissions:" + changed_values_string
 					raise ValueError(changed_values_string)
 
 				changed_values_string = "WARNING!  The following fields are not modifiable due to Permissions, and are RESET to Original Values:" + changed_values_string
