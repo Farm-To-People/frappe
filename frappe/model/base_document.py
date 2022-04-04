@@ -968,8 +968,8 @@ class BaseDocument(object):
 	def reset_values_if_no_permlevel_access(self, has_access_to, high_permlevel_fields, throw_exceptions=True, debug=False):
 		"""If the user does not have permissions at permlevel > 0, then reset the values to original / default"""
 
-		# Datahenge : Adding some warning and debugging capability here.  Because this function and its caller
-		# provided zero feedback, I had no idea I was not successfully setting a Value on my DocType.
+		# Datahenge : Adding some warning and debugging capability here.  Previously, this function and its caller
+		# provided -zero- feedback.  I had no idea I was unsuccessfully setting a Value on my DocType. :eyeroll:
 
 		to_reset = []
 
@@ -977,31 +977,39 @@ class BaseDocument(object):
 			if df.permlevel not in has_access_to and df.fieldtype not in display_fieldtypes:
 				to_reset.append(df)
 
-		if to_reset:
-			if self.is_new():
-				# if new, set default value
-				ref_doc = frappe.new_doc(self.doctype)
+		if not to_reset:
+			return  # nothing to test, return to caller.
+
+		if self.is_new():
+			# if new, set default value
+			ref_doc = frappe.new_doc(self.doctype)
+		else:
+			# get values from old doc
+			if self.get('parent_doc'):
+				parent_doc = self.parent_doc.get_latest()
+				ref_doc = [d for d in parent_doc.get(self.parentfield) if d.name == self.name][0]
 			else:
-				# get values from old doc
-				if self.get('parent_doc'):
-					parent_doc = self.parent_doc.get_latest()
-					ref_doc = [d for d in parent_doc.get(self.parentfield) if d.name == self.name][0]
-				else:
-					ref_doc = self.get_latest()
+				ref_doc = self.get_latest()
 
-			changed_values_string = ""
-			for df in to_reset:
-				if (debug or throw_exceptions) and (self.get(df.fieldname) != ref_doc.get(df.fieldname)):
-					changed_values_string += f"\n    * '{df.fieldname}' changed from '{self.get(df.fieldname)}' to '{ref_doc.get(df.fieldname)}'"
-				self.set(df.fieldname, ref_doc.get(df.fieldname))
+		changed_values_string = ""
+		for df in to_reset:
+			if (debug or throw_exceptions) and (self.get(df.fieldname) != ref_doc.get(df.fieldname)):
 
-			if changed_values_string:
-				if throw_exceptions:
-					changed_values_string = f"For DocType {self.name}, the following fields are not modifiable due to Permissions:" + changed_values_string
-					raise ValueError(changed_values_string)
+				# Datahenge: Check if Before and After are both equivalent to None.  For example, 0 vs None.
+				# If so, the value isnt' "really" being modified.  But rather, it's just a duck typing situation.
+				if (not self.get(df.fieldname)) and (not ref_doc.get(df.fieldname)):
+					continue
+				# Otherwise, append to the 'change_values_string' variable:
+				changed_values_string += f"\n    * '{df.fieldname}' changed from '{self.get(df.fieldname)}' to '{ref_doc.get(df.fieldname)}'"
+			self.set(df.fieldname, ref_doc.get(df.fieldname))
 
-				changed_values_string = "WARNING!  The following fields are not modifiable due to Permissions, and are RESET to Original Values:" + changed_values_string
-				frappe.msgprint(changed_values_string, to_console=True)
+		if changed_values_string:
+			if throw_exceptions:
+				changed_values_string = f"For DocType {self.doctype}, the following fields are not modifiable due to Permissions:" + changed_values_string
+				raise ValueError(changed_values_string)
+
+			changed_values_string = "WARNING!  The following fields are not modifiable due to Permissions, and are RESET to Original Values:" + changed_values_string
+			frappe.msgprint(changed_values_string, to_console=True)
 
 
 	def get_value(self, fieldname):
