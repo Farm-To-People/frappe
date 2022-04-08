@@ -103,7 +103,7 @@ def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reloa
 					# Datahenge: Makes no sense that 'on_change' is called for Deletions prior to SQL
 					# deletion.  But -also- called post 'on_update()' for INSERT and UPDATE.
 					# Just nonsensical naming.
-					# And from a quick search, there are barely any 'on_change()' functions in all of ERPNext?!
+					# Also, results of a quick search: there are barely any 'on_change()' functions in all of ERPNext?
 					# Let's try to put an end to this madness.
 					if not ignore_on_change:
 						doc.run_method('on_change')
