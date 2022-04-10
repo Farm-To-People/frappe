@@ -1917,6 +1917,20 @@ def print_caller():
 	msg += f"\n  * Caller Line: {indirect_caller_line}\n"
 	print(msg)
 
+def is_env_var_set(variable_name):
+	"""
+	Returns true if an Environment Variable is set to 1.
+	"""
+	if not variable_name:
+		return False
+	variable_value = os.environ.get(variable_name)
+	if not variable_value:
+		return False
+	try:
+		return int(variable_value) == 1
+	except Exception:
+		return False
+
 def dprint(msg, check_env=None, force=None):
 	"""
 	A print() that only prints when an environment variable is set.
@@ -1924,22 +1938,13 @@ def dprint(msg, check_env=None, force=None):
 	"""
 	if force:
 		print(msg)
-		return
-	if check_env:
-		variable_value = os.environ.get(check_env)
-		if not variable_value:
-			return
-		if int(variable_value) == 1:
-			print(msg)
+	elif is_env_var_set(check_env):
+		print(msg)
 
 def show_callstack():
 	"""
 	Just a helpful function used when debugging code.
 	"""
-	# import traceback
-	env_value = os.environ.get('FTP_SHOW_CALLSTACK')
-	if (not env_value) or (int(env_value) != 1):
-		return
 
 	indent = "  "
 	inspected_stack = inspect.stack()

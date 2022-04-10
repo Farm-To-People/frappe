@@ -74,7 +74,7 @@ class Database(object):
 		"""Connects to a database as set in `site_config.json`."""
 		self.cur_db_name = self.user
 		self._conn = self.get_connection()  # pylint: disable=assignment-from-no-return
-		self._cursor = self._conn.cursor()  
+		self._cursor = self._conn.cursor()
 		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 
 	def use(self, db_name):
@@ -99,7 +99,7 @@ class Database(object):
 		:param debug: Print query and `EXPLAIN` in debug log.
 		:param ignore_ddl: Catch exception if table, column missing.
 		:param as_utf8: Encode values as UTF 8.
-		:param auto_commit: Commit after executing the query.
+		:param auto_commit: Adds two commits Before and After executing the query.
 		:param update: Update this dict to all rows (if returned `as_dict`).
 
 		Examples:
@@ -189,7 +189,8 @@ class Database(object):
 			else:
 				raise
 
-		if auto_commit: self.commit()
+		if auto_commit:
+			self.commit()
 
 		if not self._cursor.description:
 			return ()
@@ -237,7 +238,7 @@ class Database(object):
 		else:
 			try:
 				return self._cursor.mogrify(query, values)
-			except: # noqa: E722
+			except: # noqa: E722  pylint: disable=bare-except
 				return (query, values)
 
 	def explain_query(self, query, values=None):
@@ -786,54 +787,6 @@ class Database(object):
 		self.sql("START TRANSACTION")
 		self.increase_transaction_depth()  # Datahenge:  Try to keep track of the overall SQL Transaction Depth.
 
-	def increase_transaction_depth(self):
-		"""
-		Increase the SQL transaction depth, based on what we've seen with START, COMMIT, and ROLLBACK.
-		"""
-		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
-		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
-			return
-
-		frappe.show_callstack()
-		if not hasattr(frappe.local, 'sql_transaction_depth'):
-			# Create a List of key,value
-			frappe.local.sql_transaction_depth = [frappe.generate_hash(length=8), 1]  # pylint: disable=assigning-non-slot
-		else:
-			frappe.local.sql_transaction_depth[1] += 1
-		self.get_transaction_depth()
-
-	def decrease_transaction_depth(self):
-		"""
-		Reduce the SQL transaction depth, based on what we've seen with START, COMMIT, and ROLLBACK.
-		"""
-		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
-		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
-			return
-
-		frappe.show_callstack()
-		if not hasattr(frappe.local, 'sql_transaction_depth'):
-			print("Warning: No open SQL transactions to decrease. :/ ")
-		else:
-			frappe.local.sql_transaction_depth[1] -= 1
-			#if frappe.local.sql_transaction_depth[1] == 0:
-			#	frappe.local.sql_transaction_depth = None  # clear out this transaction?
-		self.get_transaction_depth()
-
-	def get_transaction_depth(self, quiet=False):
-		"""
-		Fetch the SQL transaction depth, based on what we've seen with START, COMMIT, and ROLLBACK.
-		"""
-		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
-		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
-			return None
-
-		result = 0
-		if hasattr(frappe.local, 'sql_transaction_depth'):
-			result = frappe.local.sql_transaction_depth[1]
-			if not quiet:
-				print(f"SQL Transaction Depth: {frappe.local.sql_transaction_depth[0]} = {result}")
-		return result
-
 	def commit(self):
 
 		"""Commit current transaction. Calls SQL `COMMIT`."""
@@ -848,11 +801,15 @@ class Database(object):
 		#	if not depth or depth < 1:
 		#		frappe.whatis("Why bother doing a SQL Commit here?")
 
-		self.get_transaction_depth()
+		self.get_transaction_depth()  # Datahenge function.
+
+		frappe.dprint("\n---> BEFORE SQL COMMIT <---", check_env='FTP_DEBUG_SQL_TRANSACTIONS')
+		self.give_commit_advice()  # Datahenge function.
 		self.sql("commit")
 		# Datahenge: Print the commits to stdout; helps sometimes with debugging.
-		frappe.dprint("---> SQL COMMIT <---", check_env='FTP_DEBUG_SQL_TRANSACTIONS')
-		self.decrease_transaction_depth()
+		frappe.dprint("--->  AFTER SQL COMMIT <---\n", check_env='FTP_DEBUG_SQL_TRANSACTIONS')
+		self.show_commit_call_stack()
+		self.decrease_transaction_depth()  # Always decrease the transaction depth, after a Commit.
 
 		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 		self.flush_realtime_log()
@@ -1137,6 +1094,113 @@ class Database(object):
 						values=", ".join(['%s'] * len(insert_list))
 					), tuple(insert_list))
 				insert_list = []
+
+
+	# DATAHENGE CUSTOM FUNCTIONS (Begin)
+	def in_sql_transaction(self, quiet=True):
+		"""
+		Datahenge: Returns a boolean True if MariaDB is currently in a transaction, otherwise false.
+		"""
+		# Useful for debugging.
+
+		query_result = frappe.db.sql("SELECT @@in_transaction")
+		if not query_result:
+			ret = False
+		else:
+			ret = bool(query_result[0][0])
+
+		if not quiet:
+			message = f"Inside SQL Transaction: {ret}"
+			print(message)
+			frappe.msgprint(message)
+
+		return ret
+
+	def increase_transaction_depth(self):
+		"""
+		Increase the SQL transaction depth, based on what we've seen with START, COMMIT, and ROLLBACK.
+		"""
+		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
+		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
+			return
+
+		if not hasattr(frappe.local, 'sql_transaction_depth'):
+			# Create a List of key,value
+			frappe.local.sql_transaction_depth = [frappe.generate_hash(length=8), 1]  # pylint: disable=assigning-non-slot
+		else:
+			frappe.local.sql_transaction_depth[1] += 1
+		self.get_transaction_depth()
+
+	def decrease_transaction_depth(self):
+		"""
+		Reduce the SQL transaction depth, based on what we've seen with START, COMMIT, and ROLLBACK.
+		"""
+		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
+		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
+			return
+
+		if hasattr(frappe.local, 'sql_transaction_depth'):
+			frappe.local.sql_transaction_depth[1] -= 1		
+		#else:
+		#	print("Warning: No open SQL transactions to decrease. :/ ")
+			#if frappe.local.sql_transaction_depth[1] == 0:
+			#	frappe.local.sql_transaction_depth = None  # clear out this transaction?
+
+		self.get_transaction_depth()  # print the new depth to stdout
+
+	def get_transaction_depth(self, quiet=False):
+		"""
+		Fetch the SQL transaction depth, based on what we've seen with START, COMMIT, and ROLLBACK.
+		"""
+		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
+		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
+			return None
+
+		result = 0
+		if hasattr(frappe.local, 'sql_transaction_depth'):
+			result = frappe.local.sql_transaction_depth[1]
+			if not quiet:
+				print(f"SQL Transaction Depth: {frappe.local.sql_transaction_depth[0]} = {result}")
+		return result
+
+	def set_transaction_depth(self, new_depth):
+		"""
+		Set the transaction depth to a new value.
+		"""
+		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
+		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
+			return None
+
+		# Create thread global variable, if missing.
+		if not hasattr(frappe.local, 'sql_transaction_depth'):
+			frappe.local.sql_transaction_depth = [frappe.generate_hash(length=8), new_depth]
+		else:
+			frappe.local.sql_transaction_depth[1] = new_depth
+
+	def show_commit_call_stack(self):
+		enable_feature = os.environ.get('FTP_SHOW_COMMIT_CALLSTACKS')
+		if not enable_feature:
+			return
+		if int(enable_feature) != 1:
+			return
+		if not self.in_sql_transaction(quiet=True):
+			print("---> Commit Advice: There is no pending SQL Transaction, and no need to db.commit()")
+			frappe.show_callstack()
+
+	def give_commit_advice(self):
+		"""
+		This function can give advice, when a frappe.db.commit() is called, but there is nothing to actually commit.
+		"""
+		enable_feature = os.environ.get('FTP_COMMIT_ADVICE')
+		if not enable_feature:
+			return
+		if int(enable_feature) != 1:
+			return
+		if not self.in_sql_transaction(quiet=True):
+			print("---> Commit Advice: There is no pending SQL Transaction, and no need to db.commit()")
+			frappe.show_callstack()
+
+	# DATAHENGE CUSTOM FUNCTIONS (End)
 
 def enqueue_jobs_after_commit():
 	from frappe.utils.background_jobs import execute_job, get_queue
