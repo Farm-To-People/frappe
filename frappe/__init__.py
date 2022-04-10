@@ -1925,8 +1925,12 @@ def dprint(msg, check_env=None, force=None):
 	if force:
 		print(msg)
 		return
-	if check_env and int(os.environ.get(check_env)) == 1:
-		print(msg)
+	if check_env:
+		variable_value = os.environ.get(check_env)
+		if not variable_value:
+			return
+		if int(variable_value) == 1:
+			print(msg)
 
 def show_callstack():
 	"""
