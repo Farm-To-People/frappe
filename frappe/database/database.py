@@ -4,19 +4,15 @@
 # Database Module
 # --------------------
 
+# pylint: disable=assigning-non-slot
+
 from __future__ import unicode_literals
 
-import re
-import time
-import frappe
 import datetime
-import frappe.defaults
-import frappe.model.meta
-
-from frappe import _
+import os
+import re
+# import time
 from time import time
-from frappe.utils import now, getdate, cast_fieldtype, get_datetime
-from frappe.model.utils.link_count import flush_local_link_count
 
 # imports - compatibility imports
 from six import (
@@ -26,7 +22,12 @@ from six import (
 	iteritems
 )
 
-DH_DEBUG_COMMIT = False
+import frappe
+import frappe.defaults
+import frappe.model.meta
+from frappe import _
+from frappe.utils import now, getdate, cast_fieldtype, get_datetime
+from frappe.model.utils.link_count import flush_local_link_count
 
 class Database(object):
 	"""
@@ -273,15 +274,20 @@ class Database(object):
 		"""Raises exception if more than 20,000 `INSERT`, `UPDATE` queries are
 		executed in one transaction. This is to ensure that writes are always flushed otherwise this
 		could cause the system to hang."""
+
+		# Datahenge: Here, Frappe tries to detect implicit commits (there's surely a better way)
 		if self.transaction_writes and \
 			query and query.strip().split()[0].lower() in ['start', 'alter', 'drop', 'create', "begin", "truncate"]:
 			raise Exception(f"This statement can cause implicit commit:\n{query}")
 
+		# If the first word is 'commit' or 'rollback', then indicate there's no remaining transaction writes?
+		# This seems potentially wrong, when there is a larger depth of START TRANSACTION
 		if query and query.strip().lower() in ('commit', 'rollback'):
 			self.transaction_writes = 0
 
 		if query[:6].lower() in ('update', 'insert', 'delete'):
 			self.transaction_writes += 1
+			# print(f"----> Increased 'transaction_writes' to {self.transaction_writes}")
 			if self.transaction_writes > 200000:
 				if self.auto_commit_on_many_writes:
 					self.commit()
@@ -778,6 +784,55 @@ class Database(object):
 
 	def begin(self):
 		self.sql("START TRANSACTION")
+		self.increase_transaction_depth()  # Datahenge:  Try to keep track of the overall SQL Transaction Depth.
+
+	def increase_transaction_depth(self):
+		"""
+		Increase the SQL transaction depth, based on what we've seen with START, COMMIT, and ROLLBACK.
+		"""
+		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
+		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
+			return
+
+		frappe.show_callstack()
+		if not hasattr(frappe.local, 'sql_transaction_depth'):
+			# Create a List of key,value
+			frappe.local.sql_transaction_depth = [frappe.generate_hash(length=8), 1]  # pylint: disable=assigning-non-slot
+		else:
+			frappe.local.sql_transaction_depth[1] += 1
+		self.get_transaction_depth()
+
+	def decrease_transaction_depth(self):
+		"""
+		Reduce the SQL transaction depth, based on what we've seen with START, COMMIT, and ROLLBACK.
+		"""
+		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
+		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
+			return
+
+		frappe.show_callstack()
+		if not hasattr(frappe.local, 'sql_transaction_depth'):
+			print("Warning: No open SQL transactions to decrease. :/ ")
+		else:
+			frappe.local.sql_transaction_depth[1] -= 1
+			#if frappe.local.sql_transaction_depth[1] == 0:
+			#	frappe.local.sql_transaction_depth = None  # clear out this transaction?
+		self.get_transaction_depth()
+
+	def get_transaction_depth(self, quiet=False):
+		"""
+		Fetch the SQL transaction depth, based on what we've seen with START, COMMIT, and ROLLBACK.
+		"""
+		env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
+		if (not env_value) or int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) != 1:
+			return None
+
+		result = 0
+		if hasattr(frappe.local, 'sql_transaction_depth'):
+			result = frappe.local.sql_transaction_depth[1]
+			if not quiet:
+				print(f"SQL Transaction Depth: {frappe.local.sql_transaction_depth[0]} = {result}")
+		return result
 
 	def commit(self):
 
@@ -788,10 +843,16 @@ class Database(object):
 		for method in frappe.local.before_commit:
 			frappe.call(method[0], *(method[1] or []), **(method[2] or {}))
 
-		self.sql("commit")
+		#if int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) == 1:
+		#	depth = self.get_transaction_depth()
+		#	if not depth or depth < 1:
+		#		frappe.whatis("Why bother doing a SQL Commit here?")
 
-		if DH_DEBUG_COMMIT:  # useful way of debugging when SQL COMMIT happens.
-			print("---> SQL COMMIT <---")
+		self.get_transaction_depth()
+		self.sql("commit")
+		# Datahenge: Print the commits to stdout; helps sometimes with debugging.
+		frappe.dprint("---> SQL COMMIT <---", check_env='FTP_DEBUG_SQL_TRANSACTIONS')
+		self.decrease_transaction_depth()
 
 		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 		self.flush_realtime_log()
@@ -806,12 +867,16 @@ class Database(object):
 		for args in frappe.local.realtime_log:
 			frappe.realtime.emit_via_redis(*args)
 
-		frappe.local.realtime_log = []  # pylint: disable=assigning-non-slot
+		frappe.local.realtime_log = []
 
 	def rollback(self):
 		"""`ROLLBACK` current transaction."""
 		self.sql("rollback")
-		self.begin()
+		self.decrease_transaction_depth()  # Datahenge: Try to keep track of the SQL transaction depth
+
+		# Datahenge: Below is a 'self.begin()' written by Frappe.  And it makes absolutely NO sense to me.  So commenting it out.
+		# self.begin()
+
 		for obj in frappe.local.rollback_observers:
 			if hasattr(obj, "on_rollback"):
 				obj.on_rollback()

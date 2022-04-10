@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
+
+# pylint: disable=assigning-non-slot
+
 from __future__ import unicode_literals
 
 import os
-from six import iteritems
 import logging
+from six import iteritems
 
 from werkzeug.local import LocalManager
 from werkzeug.wrappers import Request, Response
@@ -276,6 +279,7 @@ def handle_exception(e):
 def after_request(rollback):
 	if (frappe.local.request.method in ("POST", "PUT") or frappe.local.flags.commit) and frappe.db:
 		if frappe.db.transaction_writes:
+			# Datahenge: Definitely some bugs in 'transaction_writes' logic, but for another day.
 			frappe.db.commit()
 			rollback = False
 

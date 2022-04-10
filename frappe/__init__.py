@@ -1917,6 +1917,39 @@ def print_caller():
 	msg += f"\n  * Caller Line: {indirect_caller_line}\n"
 	print(msg)
 
+def dprint(msg, check_env=None, force=None):
+	"""
+	A print() that only prints when an environment variable is set.
+	Very useful for conditional printing, depending on whether you want to debug code, or not.
+	"""
+	if force:
+		print(msg)
+		return
+	if check_env and int(os.environ.get(check_env)) == 1:
+		print(msg)
+
+def show_callstack():
+	"""
+	Just a helpful function used when debugging code.
+	"""
+	# import traceback
+	env_value = os.environ.get('FTP_SHOW_CALLSTACK')
+	if (not env_value) or (int(env_value) != 1):
+		return
+
+	indent = "  "
+	inspected_stack = inspect.stack()
+	print("-------CALL STACK--------")
+	reversed_stack = reversed(list(inspected_stack))
+	for idx, each_level in enumerate(reversed_stack):
+		if str(each_level[3]) == 'show_callstack':
+			continue
+		value = str(each_level[3]) + " (line = " + str(each_level[2]) + ")"
+		print(f"{indent*idx}{value}")
+	print("-------------------------")
+
+	#for line in traceback.format_stack():
+	#	print(line.strip())
 
 def whatis(message, backend=True, frontend=True):
 	"""
@@ -1944,6 +1977,7 @@ def whatis(message, backend=True, frontend=True):
 		msg = msg.replace('\n', '<br>')
 		msgprint(msg)
 
+# -------------------
 
 # Datahenge: A lovely little decorator, so I can see what's going on with functions.
 def debug_decorator(func):
