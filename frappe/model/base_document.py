@@ -316,7 +316,7 @@ class BaseDocument(object):
 		return frappe.local.valid_columns[self.doctype]
 
 	def is_new(self):
-		return self.get("__islocal")
+		return bool(self.get("__islocal"))
 
 	def as_dict(self, no_nulls=False, no_default_fields=False, convert_dates_to_str=False):
 		doc = self.get_valid_dict(convert_dates_to_str=convert_dates_to_str)
