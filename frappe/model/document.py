@@ -977,7 +977,14 @@ class Document(BaseDocument):
 	def _submit(self):
 		"""Submit the document. Sets `docstatus` = 1, then saves."""
 		self.docstatus = 1
-		self.save()
+		try:
+			self.save()
+		except Exception as ex:
+			self.docstatus = 0  # NOTE: Totally crazy that I have to do this shit.  Do I need to rollback too?
+			frappe.whatis("What we have here is a failure to Submit.  Ideally, should this not rollback?", frontend=False)
+			from ftp import in_sql_transaction
+			print(in_sql_transaction())
+			raise ex
 
 	@whitelist.__func__
 	def _cancel(self):

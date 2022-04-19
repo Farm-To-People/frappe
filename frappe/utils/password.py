@@ -45,7 +45,10 @@ def get_decrypted_password(doctype, name, fieldname='password', raise_exception=
 		{ 'doctype': doctype, 'name': name, 'fieldname': fieldname })
 
 	if auth and auth[0][0]:
-		return decrypt(auth[0][0])
+		try:
+			return decrypt(auth[0][0])
+		except Exception as ex:
+			raise Exception(f"Failure get password via decrypt: {ex}") from ex
 
 	elif raise_exception:
 		frappe.throw(_('Password not found'), frappe.AuthenticationError)
