@@ -653,12 +653,13 @@ def safelist(allow_guest=False, xss_safe=False, methods=None):
 
 def is_whitelisted(method):
 	from frappe.utils import sanitize_html
+	# Datahenge: Improving on Frappe's very-terse error messages:
+	if method not in whitelisted:
+		throw(_(f"Call to function ('{method}') not permitted (function is not safelisted)"), PermissionError)
 
 	is_guest = session['user'] == 'Guest'
-	if method not in whitelisted or is_guest and method not in guest_methods:
-		# Datahenge: Improving on Frappe's very-terse error message.
-		throw(_(f"Call to function ('{method}') not permitted (function is not safelisted, or allowed for Guest)"), PermissionError)
-		# EOM
+	if is_guest and (method not in guest_methods):
+		throw(_(f"Call to function ('{method}') not permitted (caller is Guest, and method is not allowed for Guest.)"), PermissionError)
 
 	if is_guest and method not in xss_safe_methods:
 		# strictly sanitize form_dict

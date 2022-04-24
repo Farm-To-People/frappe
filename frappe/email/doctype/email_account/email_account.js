@@ -267,21 +267,6 @@ function send_test_email(frm) {
 			} //end of callback block
 		});
 		this_dialog.hide();
-		/*
-		frappe.call({
-			'method': 'ftp.ftp_api.api.update_customer_emailid',
-			'args': {
-				'current_email_id': frm.doc.email_id,
-				'new_email_id': dialog_data.new_email_address,
-			},
-			'callback': (r) => {
-				frm.reload_doc();
-				frappe.msgprint("Email address updated.")
-			}
-		});
-		this_dialog.hide();
-		*/
-
 	});
 	this_dialog.show();
 }
