@@ -2,17 +2,16 @@
 # License: GNU General Public License v3. See license.txt
 
 from __future__ import unicode_literals
+import functools
+from past.builtins import cmp
 import frappe
 from frappe.utils import cstr, has_gravatar, cint
 from frappe import _
 from frappe.model.document import Document
 from frappe.core.doctype.dynamic_link.dynamic_link import deduplicate_dynamic_links
-from six import iteritems
-from past.builtins import cmp
 from frappe.model.naming import append_number_if_name_exists
 from frappe.contacts.address_and_contact import set_link_title
 
-import functools
 
 class Contact(Document):
 	def autoname(self):
@@ -120,7 +119,7 @@ class Contact(Document):
 		if len(is_primary) > 1:
 			frappe.throw(_("Only one {0} can be set as primary.").format(frappe.bold(frappe.unscrub(fieldname))))
 
-		primary_number_exists = False 
+		primary_number_exists = False
 		for d in self.phone_nos:
 			if d.get(field_name) == 1:
 				primary_number_exists = True

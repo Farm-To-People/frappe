@@ -1670,8 +1670,7 @@ class Document(BaseDocument):
 
 		if self.parent_doc:
 			return self.parent_doc
-		else:
-			raise ValueError(f"Function 'set_parent_doc()' was unable to find a parent for calling Document {self.doctype} - {self.name}")
+		raise ValueError(f"Function 'set_parent_doc()' was unable to find a parent for calling Document {self.doctype} - {self.name}")
 
 
 	def as_child_get_original_doc(self, _parent_doc=None):
@@ -1703,6 +1702,30 @@ class Document(BaseDocument):
 			return next(iter([ line for line in parent_orig.items if line.name == self.name ]))
 		except StopIteration:
 			return None  # Order Line is New.
+
+	def set_called_via_parent(self, parent_doc=None):
+		"""
+		Datahenge: We used a custom "flag" attribute named "called_via_parent" to detect whether Document
+		controllers were triggered by a parent (ERPNext UI), or not.
+		"""
+		# NOTE: Very Important to set the value inside "flags".  Otherwise, the data is lost during things like delete().
+
+		if not self.meta.get('istable'):
+			return self.flags.pop("called_via_parent", False)  # important to set a default, or you get a Key Errror.
+
+		if hasattr(self, "flags") and hasattr(self.flags, "called_via_parent") and self.flags.called_via_parent is True:
+			return True
+
+		if bool(parent_doc):
+			self.flags.called_via_parent = True
+			return True
+
+		return False
+
+	def get_called_via_parent(self):
+		if hasattr(self, "flags") and hasattr(self.flags, "called_via_parent") and self.flags.called_via_parent is True:
+			return True
+		return False
 
 # ------------------
 # Non-Class methods:
