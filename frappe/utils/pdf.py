@@ -51,7 +51,8 @@ def get_pdf(html, options=None, output=None):
 			if output:  # output is a PdfFileWriter object
 				output.appendPagesFromReader(reader)
 		else:
-			raise
+			print(f"Unhandled exception in get_pdf(): {e}")  # Datahenge: Provide more feedback on why there was an error.
+			raise e
 	finally:
 		cleanup(options)
 
