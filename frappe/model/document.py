@@ -1650,6 +1650,9 @@ class Document(BaseDocument):
 		"""
 		DEBUG = False
 
+		if _parent_doc and not isinstance(_parent_doc, Document):
+			raise TypeError("Argument '_parent_doc' is not a Document type.")
+
 		# Scenario 1, an argument was provided, so accept it as fact, and apply it.
 		if _parent_doc:
 			self.parent_doc = _parent_doc
