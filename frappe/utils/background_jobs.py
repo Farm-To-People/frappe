@@ -13,14 +13,46 @@ import frappe.monitor
 
 # imports - third-party imports
 
-default_timeout = 300
-queue_timeout = {
-	'background': 2500,
-	'long': 1500,
-	'default': 300,
-	'short': 300
-}
+# default_timeout = 300  # Datahenge: Does not appear this global is referenced anywhere.
 
+def read_queue_names_from_disk():
+	"""
+	Returns a dictionary with the names of the Redis Queues, and their timeouts.
+	"""
+	# pylint: disable=pointless-string-statement
+	# pylint: disable=invalid-name
+
+	# Example of common_site_config.json:
+	'''
+	"worker_queues": [
+		{ "name": "background", "timeout": 2500 },
+		{ "name": "default", "timeout": 300 },
+		{ "name": "long", "timeout": 1500 },
+		{ "name": "short", "timeout": 300 }
+	]
+	'''
+
+	FALLBACK_RESULT = {
+		'background': 2500,
+		'long': 1500,
+		'default': 300,
+		'short': 300
+	}
+
+	if (not hasattr(frappe, "local")) or (not hasattr(frappe.local, 'conf')):
+		return FALLBACK_RESULT
+
+	if not hasattr(frappe.local.conf, 'worker_queues'):
+		return FALLBACK_RESULT
+
+	result = {}
+	for each in frappe.local.conf.worker_queues:
+		result[each['name']] = each['timeout']
+
+	return result
+
+
+queue_timeout = read_queue_names_from_disk()  # Datahenge: Allows for configurable queue names.
 redis_connection = None
 
 def enqueue(method, queue='default', timeout=None, event=None,
@@ -249,6 +281,5 @@ def enqueue_test_job():
 	enqueue('frappe.utils.background_jobs.test_job', s=100)
 
 def test_job(s):
-	import time
 	print('sleeping...')
 	time.sleep(s)
