@@ -39,18 +39,22 @@ def read_queue_names_from_disk():
 		'short': 300
 	}
 
-	if (not hasattr(frappe, "local")) or (not hasattr(frappe.local, 'conf')):
-		return FALLBACK_RESULT
+	site_config = frappe._dict(frappe.get_site_config())  # pylint: disable=protected-access, assigning-non-slot
+	if not site_config:
+		sites_path = os.environ.get("SITES_PATH", ".")  # read from environment variable, or 'assume' we are in Bench directory.
+		site_config = frappe._dict(frappe.get_site_config(sites_path=sites_path))
+		if not site_config:
+			raise Exception("Unable to read from common_site_config.json")
 
-	if not hasattr(frappe.local.conf, 'worker_queues'):
+	if not hasattr(site_config, 'worker_queues'):
+		print("WARNING: Missing key 'worker_queues' in Site Configuration; using fallback result for Worker Queue names.")
 		return FALLBACK_RESULT
 
 	result = {}
-	for each in frappe.local.conf.worker_queues:
+	for each in site_config['worker_queues']:
 		result[each['name']] = each['timeout']
 
 	return result
-
 
 queue_timeout = read_queue_names_from_disk()  # Datahenge: Allows for configurable queue names.
 redis_connection = None
@@ -268,7 +272,8 @@ def get_redis_conn():
 		raise Exception('You need to call frappe.init')
 
 	elif not frappe.local.conf.redis_queue:
-		raise Exception('redis_queue missing in common_site_config.json')
+		print(frappe.local.conf)
+		raise Exception("Key 'redis_queue' missing in common_site_config.json")
 
 	global redis_connection
 
