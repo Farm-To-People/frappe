@@ -14,8 +14,12 @@ frappe.listview_settings["Email Account"] = {
 			return [__("Default Sending"), color, "default_outgoing,=,Yes"];
 		}
 		else {
+			/* Datahenge: This previous said 'Inbox', which is wrong.  
+			              You can create an Account, outbound only, and that doesn't make it an Inbox.
+						  Change to just say 'Other'
+			*/
 			color = doc.enable_incoming ? "blue" : "gray";
-			return [__("Inbox"), color, "is_global,=,No|is_default=No"];
+			return [__("Other"), color, "is_global,=,No|is_default=No"];
 		}
 	}
 }

@@ -329,6 +329,8 @@ def return_unsubscribed_page(email, doctype, name):
 
 def flush(from_test=False):
 	"""flush email queue, every time: called from scheduler"""
+	# Datahenge: This function sends all the emails waiting in the Email Queue.
+	#            It appears to run every 5 minutes, triggered by Frappe's hooks.py
 	# additional check
 
 	auto_commit = not from_test

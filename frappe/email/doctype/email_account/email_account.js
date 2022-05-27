@@ -160,6 +160,7 @@ frappe.ui.form.on("Email Account", {
 					frm.events.set_domain_fields(frm, r.message);
 				} else {
 					frm.set_value("domain", "");
+					/*
 					frappe.confirm(__('Email Domain not configured for this account, Create one?'),
 						function () {
 							frappe.model.with_doctype("Email Domain", function() {
@@ -170,6 +171,7 @@ frappe.ui.form.on("Email Account", {
 							});
 						}
 					);
+					*/
 				}
 			}
 		});

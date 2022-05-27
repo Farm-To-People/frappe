@@ -157,6 +157,27 @@ class Document(BaseDocument):
 		"""Reload document from database"""
 		self.load_from_db()
 
+	def reload_child_table(self, docfield_fieldname):
+		"""
+		Datahenge: What if I want to reread just a Child table from SQL, without rereading all
+		the other DocFields on this Doctype?
+
+		Now, I think can...
+		"""
+		try:
+			df = next(iter([ table_field for table_field in self.meta.get_table_fields()
+			                 if table_field.fieldname == docfield_fieldname]))
+		except StopIteration:
+			raise Exception(f"DocType '{self.name}' does not have a Table field named '{docfield_fieldname}'")
+
+		children = frappe.db.get_values(df.options,
+			{"parent": self.name, "parenttype": self.doctype, "parentfield": df.fieldname},
+			"*", as_dict=True, order_by="idx asc")
+		if children:
+			self.set(df.fieldname, children)
+		else:
+			self.set(df.fieldname, [])
+
 	def load_from_db(self):
 		"""Load document and children from database and create properties
 		from fields"""

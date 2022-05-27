@@ -323,8 +323,29 @@ frappe.views.CommunicationComposer = class {
 		return frappe.last_edited_communication[this.doctype][this.key];
 	}
 
+	async farm_to_people_rules() {
+		/* These are rules that Farm To People wants to apply to Email Communications. */
+		if (! this.frm.doc.doctype == 'Purchase Order') {
+			return;
+		}
+		this.sender = "orders@farmtopeople.com";
+		this.sender_full_name = "orders@farmtopeople.com";
+
+		let po_recipients = (await frappe.db.get_value('Supplier', {'name': this.frm.doc.supplier}, 'emails_for_purchase_order'))
+			.message.emails_for_purchase_order;
+		if (po_recipients) {
+			// frappe.show_alert(__("Should email this Purchase Order to {0}", [po_recipients]));
+			this.recipients = po_recipients;
+			// console.log(`end of function, recipients = ${this.recipients}`);
+		}
+	}
+
 	async set_values() {
+
+		await this.farm_to_people_rules();  // have to call from here, because we've got to await promise returns.
+
 		for (const fieldname of ["recipients", "cc", "bcc", "sender"]) {
+			// console.log(`${fieldname}:${this[fieldname]}`);
 			await this.dialog.set_value(fieldname, this[fieldname] || "");
 		}
 
@@ -633,6 +654,9 @@ frappe.views.CommunicationComposer = class {
 			return;
 		}
 
+		// Datahenge:
+		let sender = me.sender || form_values.sender;
+		let sender_full_name = me.sender || (form_values.sender	? frappe.user.full_name(): undefined);
 
 		return frappe.call({
 			method:"frappe.core.doctype.communication.email.make",
@@ -648,10 +672,8 @@ frappe.views.CommunicationComposer = class {
 				print_html: print_html,
 				send_me_a_copy: form_values.send_me_a_copy,
 				print_format: print_format,
-				sender: form_values.sender,
-				sender_full_name: form_values.sender
-					? frappe.user.full_name()
-					: undefined,
+				sender: sender,  // DH
+				sender_full_name: sender_full_name,  // DH
 				email_template: form_values.email_template,
 				attachments: selected_attachments,
 				_lang : me.lang_code,
