@@ -442,7 +442,7 @@ def sendmail(communication_name, print_html=None, print_format=None, attachments
 	try:
 
 		if lang:
-			frappe.local.lang = lang
+			frappe.local.lang = lang  # pylint: disable=assigning-non-slot
 
 		if session:
 			# hack to enable access to private files in PDF

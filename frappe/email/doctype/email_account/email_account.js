@@ -221,12 +221,13 @@ function send_test_email(frm) {
 	// Datahenge: Add the ability to test the Email Account.
 	let me = this;
 
-	const title = __("Test Email Account by Sending a Message");
+	const title = __("Test Email Account");
 	const fields = [
 		{
 			fieldname: 'recipients',
 			fieldtype:'Data',
 			label: __('Recipients:'),
+			description: "If there are multiple recipients, separate each address with a comma.",
 			reqd: 1
 		}
 	];
@@ -236,7 +237,7 @@ function send_test_email(frm) {
 		fields: fields
 	});
 
-	this_dialog.set_primary_action(__('Update'), function() {
+	this_dialog.set_primary_action(__('Send Email'), function() {
 		const dialog_data = this_dialog.get_values();
 		frappe.call({
 			method:"frappe.core.doctype.communication.email.make",
@@ -257,6 +258,9 @@ function send_test_email(frm) {
 					if (r.message["emails_not_sent_to"]) {
 						frappe.msgprint(__("Email not sent to {0} (unsubscribed / disabled)",
 							[ frappe.utils.escape_html(r.message["emails_not_sent_to"]) ]) );
+					}
+					else {
+						frappe.msgprint(__("Email enqueued.  Transmission may take a few minutes."))
 					}
 				} else {
 					console.log(r);

@@ -7,7 +7,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.email.queue import send_one
-from frappe.utils import now_datetime
+# from frappe.utils import now_datetime
 
 
 class EmailQueue(Document):
