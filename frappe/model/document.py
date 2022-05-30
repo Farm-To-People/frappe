@@ -907,7 +907,7 @@ class Document(BaseDocument):
 
 		if invalid_links:
 			msg = ", ".join((each[2] for each in invalid_links))
-			frappe.throw(_("Invalid link. Could not find {0}").format(msg),
+			frappe.throw(_(f"Invalid link in DocType '{self.doctype}'. Could not find {msg}"),
 				frappe.LinkValidationError)
 
 		if cancelled_links:
