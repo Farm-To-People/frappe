@@ -69,7 +69,7 @@ class Address(Document):
 					print(f"Customer updated shipping address. Updating Daily Order {daily_order}")
 				doc_daily_order = frappe.get_doc("Daily Order", daily_order)
 				doc_daily_order.set_default_address()
-				doc_daily_order.save()
+				doc_daily_order.db_update()
 				frappe.db.commit()  # Still not sure when it's appropriate to call this.
 				order_address_updated = True
 		if order_address_updated:

@@ -1601,6 +1601,7 @@ class Document(BaseDocument):
 
 		current_child_records = self.get(child_docfield_name)
 		doc_orig = self.get_doc_before_save()
+
 		if not doc_orig:
 			# Scenario 1: Parent is a new Document, therefore any Child is also new.
 			if not current_child_records:

@@ -799,7 +799,7 @@ class Database(object):
 		#if int(os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')) == 1:
 		#	depth = self.get_transaction_depth()
 		#	if not depth or depth < 1:
-		#		frappe.whatis("Why bother doing a SQL Commit here?")
+		#		print("Why bother doing a SQL Commit here?")
 
 		self.get_transaction_depth()  # Datahenge function.
 
