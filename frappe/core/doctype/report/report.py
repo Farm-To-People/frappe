@@ -109,7 +109,7 @@ class Report(Document):
 		if (not self.query.lower().startswith("with")) and (not self.query.lower().startswith("select")):
 			frappe.throw(_("Query must be a SELECT or WITH"), title=_('Report Document Error'))
 		# EOM
-		result = [list(t) for t in frappe.db.sql(self.query, filters, debug=True)]
+		result = [list(t) for t in frappe.db.sql(self.query, filters, debug=False)]
 		columns = self.get_columns() or [cstr(c[0]) for c in frappe.db.get_description()]
 
 		return [columns, result]
