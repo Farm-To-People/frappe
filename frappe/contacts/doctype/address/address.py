@@ -37,6 +37,9 @@ class Address(Document):
 		if not customer_keys:
 			return
 
+		if not self.pincode:
+			return
+
 		five_digit_postal_code = self.pincode[:5]  # Customer's address may be a 9-digit Zip.
 		doc_postal_code = frappe.get_doc("Postal Code", five_digit_postal_code)  # Fetch the Postal Code record.
 
