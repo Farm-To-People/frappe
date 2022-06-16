@@ -2045,3 +2045,47 @@ def yprint(message, print_level=YPrintLevel.Console, with_conditions=False, cond
 def clear_console():
 	os.system('clear')
 	print()  # extra line helps keep statements aligned
+
+
+def in_sql_transaction(suffix=None, stdout=False, use_msgprint=False, error_on_true=False):
+	"""
+	Returns a boolean True if MariaDB is currently in a transaction, otherwise false.
+	Very useful for debugging.
+	NOTE: Requires granting a new privilege to the SQL User:  
+	      `GRANT Process ON *.* TO 'user_name'@'%';`
+	"""
+
+	query_result = db.sql("SELECT @@autocommit;")
+	if query_result and query_result[0] and query_result[0][0]:
+		msgprint("WARNING! SQL AUTO-COMMIT IS ENABLED!", to_console=True)
+
+	connection_id = db.sql("SELECT connection_id() AS connection_id;", as_dict=True)[0]['connection_id']
+	print(f"MariaDB Connection ID = {connection_id}")
+
+	query_result = db.sql("SELECT * FROM information_schema.innodb_trx WHERE trx_mysql_thread_id = %(connection_id)s;",
+	                      values={"connection_id": connection_id}, as_dict=True)
+
+	print(json.dumps(query_result, indent=4, default=str))
+	# query_result = db.sql("SELECT * FROM information_schema.INNODB_LOCKS;", as_dict=True)
+	# print(json.dumps(query_result, indent=4, default=str))
+
+	row_locks = 0
+	for each in query_result:
+		if each['trx_rows_locked'] > 0:
+			row_locks += each['trx_rows_locked']
+
+	if row_locks == 0:
+		return False
+
+	message = f"Inside of an uncommited SQL Transaction (Connection ID = {connection_id})"
+	if error_on_true:
+		raise Exception(message)
+
+	if suffix:
+		message += f" ({suffix})"
+	if stdout:
+		print(message)
+	if use_msgprint:
+		msgprint(message)
+
+	return True
