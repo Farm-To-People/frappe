@@ -3,6 +3,7 @@
 # NOTE:  I'm writing this class here in Frappe App, so I don't have to worry about circular references (if I were to write in FTP, for example)
 
 import os
+import time
 import json
 import frappe
 
@@ -26,7 +27,7 @@ class SQLTransaction():
 	#		FTP_DEBUG_SQL_TRANSACTIONS
 
 
-	def __init__(self, validate_autocommit=False):
+	def __init__(self, validate_autocommit=True):
 
 		# Optional, in case you need to verify autocommit is turned off.
 		if validate_autocommit:
@@ -99,15 +100,15 @@ class SQLTransaction():
 		if not connection_id:
 			raise ValueError("Critical Error: Unable to determine the current MySQL connection identifer.")
 
-		query_result = frappe.db.sql("SELECT * FROM information_schema.innodb_trx WHERE trx_mysql_thread_id = %(connection_id)s;",
-							values={"connection_id": connection_id}, as_dict=True)
+		query = "SELECT * FROM information_schema.innodb_trx;" # WHERE trx_mysql_thread_id = %(connection_id)s;"
+		query_result = frappe.db.sql(query,	values={"connection_id": connection_id}, as_dict=True)
 
 		if not query_result:
 			return {}
 
 		# First row only?
 		if len(query_result) > 1:
-			raise Exception("ERROR: FOund more then 1 row of 'information_schema.innodb_trx'")
+			raise Exception("ERROR: Found more then 1 row of 'information_schema.innodb_trx'")
 
 		query_result = query_result[0]
 
@@ -151,6 +152,12 @@ class SQLTransaction():
 		"""
 		Returns a boolean True if MariaDB has uncommited -changes- to rows or schema.
 		"""
+		# After any SQL COMMIT, it's important to sleep for a moment!.  Otherwise, you're querying TRX data before the MySQL
+		# server has had an opportunity to update itself.  And you'll get a false negative about Uncommitted Transactions.
+		# https://stackoverflow.com/questions/34303079/how-do-i-determine-if-i-have-uncommitted-writes-in-a-mysql-transaction
+		
+		frappe.db.sql("SELECT SLEEP(0.5);")
+
 		transaction_details = SQLTransaction.get_sql_transaction_details()
 		if not transaction_details:
 			return False
@@ -175,3 +182,9 @@ class SQLTransaction():
 		if not SQLTransaction.exist_uncommitted_changes():
 			print("---> Commit Advice: There is no uncommitted SQL Transaction, and no need to db.commit()")
 			frappe.show_callstack()
+
+
+	@staticmethod
+	def show_processes():
+		result = frappe.db.sql("SHOW PROCESSLIST;")
+		print(result)

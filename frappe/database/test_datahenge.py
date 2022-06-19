@@ -13,6 +13,10 @@ SITES_PATH = '/home/sysop/clients/farm_to_people/v13_dev/mybench/sites'
 def test_basic():
 	assert "foo".upper() == "FOO"
 
+def test_autocommit():
+	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
+	SQLTransaction.err_on_autocommit()
+
 def test_not_in_transaction():
 	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
 	frappe.db.commit()
@@ -32,37 +36,36 @@ def test_commits_1():
 
 def test_commits_2():
 	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
+	frappe.db.sql("SET AUTOCOMMIT=0;")
 	frappe.db.commit()
-	customers = frappe.get_list("Customer", pluck='name')
-	first_customer_name = customers[0]
-	statement = "UPDATE `tabCustomer` SET `_comments` = CONCAT(IFNULL(`_comments`,''), '1') WHERE `name` = %(customer_name)s"
-	frappe.db.sql(statement, values={'customer_name': first_customer_name})
-	assert SQLTransaction.exist_uncommitted_changes() is False
+	assert SQLTransaction.exist_uncommitted_changes() is False  # first test
 
+	# customers = frappe.get_list("Customer", pluck='name')
+	# first_customer_name = customers[0]
+	first_customer_name = 'CUST-0000007'
+
+	# Change the value of the comments to 'Red':
+	statement = """ UPDATE `tabCustomer` SET `_comments` = 'Red'
+	WHERE `name` = %(customer_name)s """
+	frappe.db.sql(statement, values={'customer_name': first_customer_name})
+	frappe.db.commit()
+	frappe.db.sql("SELECT SLEEP(2);")
+
+	statement = """ UPDATE `tabCustomer` SET `_comments` = CASE
+	WHEN `_comments` = 'Red' THEN 'Blue'
+	WHEN `_comments` = 'Blue' THEN 'Red'
+	ELSE 'Yellow'
+	END 
+	WHERE `name` = %(customer_name)s """
+
+	frappe.db.sql(statement, values={'customer_name': first_customer_name})
+
+	assert SQLTransaction.exist_uncommitted_changes(to_stdout=False) is True  # second test
+	frappe.db.commit()
+	assert SQLTransaction.exist_uncommitted_changes(to_stdout=False) is False # third test
+
+"""
 def test_commits_3():
-	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
-	frappe.db.commit()
-	assert SQLTransaction.exist_uncommitted_changes() is False
-	customers = frappe.get_list("Customer", pluck='name')
-	first_customer_name = customers[0]
-	statement = "UPDATE `tabCustomer` SET `_comments` = CONCAT(IFNULL(`_comments`,''), '1') WHERE `name` = %(customer_name)s"
-	frappe.db.sql(statement, values={'customer_name': first_customer_name}, debug=True)
-	assert SQLTransaction.exist_uncommitted_changes() is True
-	frappe.db.sql("COMMIT;")
-	assert SQLTransaction.exist_uncommitted_changes() is False
-
-def test_commits_4():
-	# Same as Test 3, but with frappe.db.commit()
-	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
-	frappe.db.commit()
-	customers = frappe.get_list("Customer", pluck='name')
-	first_customer_name = customers[0]
-	statement = "UPDATE `tabCustomer` SET `_comments` = CONCAT(IFNULL(`_comments`,''), '1') WHERE `name` = %(customer_name)s"
-	frappe.db.sql(statement, values={'customer_name': first_customer_name})
-	frappe.db.commit()
-	assert SQLTransaction.exist_uncommitted_changes() == 0
-
-def test_commits_5():
 	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
 	frappe.db.commit()
 
@@ -75,3 +78,4 @@ def test_commits_5():
 	assert SQLTransaction.exist_uncommitted_changes() == 1
 	frappe.db.commit()
 	assert SQLTransaction.exist_uncommitted_changes() == 0
+"""
