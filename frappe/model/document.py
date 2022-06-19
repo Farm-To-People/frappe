@@ -1002,8 +1002,7 @@ class Document(BaseDocument):
 			self.save()
 		except Exception as ex:
 			self.docstatus = 0  # NOTE: Totally crazy that I have to do this shit.  Do I need to rollback too?
-			# frappe.whatis("What we have here is a failure to Submit.  Ideally, should this not rollback?", frontend=False)
-			print(frappe.in_sql_transaction(error_on_true=False))
+			frappe.whatis("What we have here is a failure to Submit.  Ideally, should this not rollback?", frontend=False)
 			raise ex
 
 	@whitelist.__func__
