@@ -10,31 +10,31 @@ from frappe.database.datahenge import SQLTransaction
 SITE_NAME = 'testerp.farmtopeople.com'
 SITES_PATH = '/home/sysop/clients/farm_to_people/v13_dev/mybench/sites'
 
-def test_basic():
+def test1_basic():
 	assert "foo".upper() == "FOO"
 
-def test_autocommit():
+def test2_autocommit():
 	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
 	SQLTransaction.err_on_autocommit()
 
-def test_not_in_transaction():
+def test3_not_in_transaction():
 	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
 	frappe.db.commit()
 	assert SQLTransaction.in_transaction() == 0
 
-def test_in_transaction():
+def test4_in_transaction():
 	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
 	frappe.db.commit()
 	frappe.get_list("Item")
 	assert SQLTransaction.in_transaction() == 1
 
-def test_commits_1():
+def test5_commits_1():
 	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
 	frappe.db.commit()
 	frappe.get_list("Item")
 	assert SQLTransaction.exist_uncommitted_changes() is False
 
-def test_commits_2():
+def test6_commits_2():
 	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
 	frappe.db.sql("SET AUTOCOMMIT=0;")
 	frappe.db.commit()
@@ -64,8 +64,8 @@ def test_commits_2():
 	frappe.db.commit()
 	assert SQLTransaction.exist_uncommitted_changes(to_stdout=False) is False # third test
 
-"""
-def test_commits_3():
+
+def test7_commits_3():
 	frappe.init(site=SITE_NAME, sites_path=SITES_PATH)
 	frappe.db.commit()
 
@@ -78,4 +78,3 @@ def test_commits_3():
 	assert SQLTransaction.exist_uncommitted_changes() == 1
 	frappe.db.commit()
 	assert SQLTransaction.exist_uncommitted_changes() == 0
-"""

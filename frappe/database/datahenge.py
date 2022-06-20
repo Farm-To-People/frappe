@@ -100,15 +100,15 @@ class SQLTransaction():
 		if not connection_id:
 			raise ValueError("Critical Error: Unable to determine the current MySQL connection identifer.")
 
-		query = "SELECT * FROM information_schema.innodb_trx;" # WHERE trx_mysql_thread_id = %(connection_id)s;"
+		query = "SELECT * FROM information_schema.innodb_trx WHERE trx_mysql_thread_id = %(connection_id)s;"
 		query_result = frappe.db.sql(query,	values={"connection_id": connection_id}, as_dict=True)
 
 		if not query_result:
 			return {}
 
-		# First row only?
+		# Enforce a single row.
 		if len(query_result) > 1:
-			raise Exception("ERROR: Found more then 1 row of 'information_schema.innodb_trx'")
+			raise Exception(f"ERROR: Found more then 1 row of 'information_schema.innodb_trx'.  {query_result}")
 
 		query_result = query_result[0]
 
