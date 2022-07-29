@@ -51,6 +51,10 @@ class Address(Document):
 
 	def update_daily_orders(self, verbose=False):
 		# This works nicely, inside the Frappe module, because we don't need to import FTP objects.
+		from datetime import timedelta
+		from temporal import date_to_iso_string
+		from temporal.core import get_system_date
+
 		if (self.address_type != "Shipping") or (not self.is_shipping_address):
 			if verbose:
 				frappe.msgprint("Address is not customer's default Shipping Address.  Daily Orders will not be updated.", level='debug')
@@ -62,10 +66,12 @@ class Address(Document):
 			return
 
 		order_address_updated = False
+		tomorrow_date = get_system_date() + timedelta(days=1)
+		tomorrow_date = date_to_iso_string(tomorrow_date)
 		for customer_key in customer_keys:
-			filters = { "status_delivery": "Ready",
-			            "customer": customer_key,
-						"status_editing": "Unlocked" }
+			# For each customer found, update the Orders.
+			filters = { "delivery_date": [">=", tomorrow_date],
+			            "customer": customer_key }
 			daily_orders = frappe.get_list("Daily Order", filters=filters, pluck='name')
 			for daily_order in daily_orders:
 				if verbose:
