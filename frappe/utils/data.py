@@ -42,6 +42,7 @@ def getdate(string_date=None):
 	try:
 		return parser.parse(string_date).date()
 	except ParserError:
+		frappe.whatis(string_date)
 		frappe.throw(frappe._('{} is not a valid date string.').format(
 			frappe.bold(string_date)
 		), title=frappe._('Invalid Date'))
@@ -294,7 +295,7 @@ def get_time_str(timedelta_obj):
 def get_user_date_format():
 	"""Get the current user date format. The result will be cached."""
 	if getattr(frappe.local, "user_date_format", None) is None:
-		frappe.local.user_date_format = frappe.db.get_default("date_format")
+		frappe.local.user_date_format = frappe.db.get_default("date_format")  # pylint: disable=assigning-non-slot
 
 	return frappe.local.user_date_format or "yyyy-mm-dd"
 
@@ -303,7 +304,7 @@ get_user_format = get_user_date_format  # for backwards compatibility
 def get_user_time_format():
 	"""Get the current user time format. The result will be cached."""
 	if getattr(frappe.local, "user_time_format", None) is None:
-		frappe.local.user_time_format = frappe.db.get_default("time_format")
+		frappe.local.user_time_format = frappe.db.get_default("time_format")  # pylint: disable=assigning-non-slot
 
 	return frappe.local.user_time_format or "HH:mm:ss"
 
@@ -456,8 +457,7 @@ def duration_to_seconds(duration):
 	return value
 
 def validate_duration_format(duration):
-	import re
-	is_valid_duration = re.match("^(?:(\d+d)?((^|\s)\d+h)?((^|\s)\d+m)?((^|\s)\d+s)?)$", duration)
+	is_valid_duration = re.match(r"^(?:(\d+d)?((^|\s)\d+h)?((^|\s)\d+m)?((^|\s)\d+s)?)$", duration)
 	if not is_valid_duration:
 		frappe.throw(frappe._("Value {0} must be in the valid duration format: d h m s").format(frappe.bold(duration)))
 
@@ -1370,7 +1370,7 @@ def quote_urls(html):
 		groups = list(match.groups())
 		groups[2] = quoted(groups[2])
 		return "".join(groups)
-	return re.sub('(href|src){1}([\s]*=[\s]*[\'"]?)((?:http)[^\'">]+)([\'"]?)',
+	return re.sub(r'(href|src){1}([\s]*=[\s]*[\'"]?)((?:http)[^\'">]+)([\'"]?)',
 		_quote_url, html)
 
 def unique(seq):
