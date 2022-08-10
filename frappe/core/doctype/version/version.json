@@ -10,6 +10,7 @@
   "column_break_3",
   "docname",
   "action_taken",
+  "description_short",
   "data",
   "section_break_4",
   "table_html"
@@ -22,6 +23,7 @@
    "in_standard_filter": 1,
    "label": "DocType",
    "options": "DocType",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -33,6 +35,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Document Name",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -54,14 +57,23 @@
    "fieldname": "action_taken",
    "fieldtype": "Select",
    "label": "Action",
-   "options": "Create\nUpdate\nDelete\nRename"
+   "options": "Create\nUpdate\nDelete\nRename",
+   "read_only": 1,
+   "reqd": 1,
+   "reqd_in_database": 1
+  },
+  {
+   "fieldname": "description_short",
+   "fieldtype": "Data",
+   "label": "Description",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-copy",
  "idx": 1,
  "in_create": 1,
  "links": [],
- "modified": "2022-03-08 20:37:15.025340",
+ "modified": "2022-08-09 18:39:17.240917",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Version",

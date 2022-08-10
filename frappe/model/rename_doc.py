@@ -3,6 +3,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import json
 import frappe
 from frappe import _, bold
 from frappe.model.dynamic_links import get_dynamic_link_map
@@ -87,6 +88,16 @@ def rename_doc(doctype, old, new, force=False, merge=False, ignore_permissions=F
 	new_doc._local = getattr(old_doc, "_local", None)
 
 	new_doc.run_method("after_rename", old, new, merge)
+
+	# Datahenge: Let's log that it was renamed, please.
+	version = frappe.new_doc('Version')
+	version.set_diff(old_doc, new_doc)
+	version.ref_doctype = new_doc.doctype
+	version.docname = new_doc.name
+	version.action_taken = 'Rename'
+	version.description_short = f"{new_doc.doctype} document renamed from {old} to {new}"
+	version.insert(ignore_permissions=True)
+	# Datahenge: End
 
 	if not merge:
 		rename_password(doctype, old, new)

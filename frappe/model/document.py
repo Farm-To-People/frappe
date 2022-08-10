@@ -1233,8 +1233,10 @@ class Document(BaseDocument):
 		version = frappe.new_doc('Version')
 		if not self._doc_before_save:
 			version.for_insert(self)
+			version.action_taken = 'Create'  # DH
 			version.insert(ignore_permissions=True)
 		elif version.set_diff(self._doc_before_save, self):
+			version.action_taken = 'Update'  # DH
 			version.insert(ignore_permissions=True)
 			if not frappe.flags.in_migrate:
 				# follow since you made a change?
