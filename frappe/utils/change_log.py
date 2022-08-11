@@ -242,6 +242,11 @@ def add_message_to_redis(update_json):
 
 @frappe.whitelist()
 def show_update_popup():
+	# Datahenge: Disabling this, because it's getting very annoying.
+	# Instead of automatically showing to every System Manager, this should be a voluntary Web Page.
+	# If you want to know the latest versions?  Open the Web Page.  Instead of spamming users about software updates.
+	return
+
 	cache = frappe.cache()
 	user  = frappe.session.user
 
