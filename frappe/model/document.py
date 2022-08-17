@@ -5,6 +5,7 @@ from __future__ import unicode_literals, print_function
 
 import hashlib
 import json
+from datetime import date as date_type
 import time
 
 # Datahenge
@@ -72,6 +73,10 @@ def get_doc(*args, **kwargs):
 
 		else:
 			raise ValueError('First non keyword argument must be a string or dict')
+
+		# Datahenge: It's possible to make a Date the primary key (name) of a DocType.  When doing so, make sure to call with strings.
+		if (len(args) > 1) and isinstance(args[1], date_type):
+			raise ValueError('When calling get_doc(), second non keyword argument cannot be a Date object (use an ISO String instead)')
 
 	if len(args) < 2 and kwargs:
 		if 'doctype' in kwargs:
@@ -195,6 +200,8 @@ class Document(BaseDocument):
 		else:
 			d = frappe.db.get_value(self.doctype, self.name, "*", as_dict=1, for_update=self.flags.for_update)
 			if not d:
+				# TODO: Find a way to prevent this from throwing, when purposely
+				# Doing a try/catch maneuver, to prevent 2 SQL calls (exists + get_doc)
 				frappe.throw(_("{0} {1} not found").format(_(self.doctype), self.name), frappe.DoesNotExistError)
 
 			super(Document, self).__init__(d)
