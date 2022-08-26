@@ -596,16 +596,16 @@ class Database(object):
 		if not docfield_metadata:
 			frappe.throw(_('Invalid field name: {0}').format(frappe.bold(fieldname)), self.InvalidColumnName)
 
-		# Datahenge:  This is another Holy Shit moment:  The datatype for None dates was CHANGING into Today's Date!
+		# Datahenge:  Another 'wow!' moment.  The datatype for a 'None' date was AUTOMATICALLY falling back to Today's Date!
 		val = cast_fieldtype(docfield_metadata.fieldtype, val)
 
-		# TODO:  Datahenge:  I have No Idea why repeating this check is necessary here.  The same thing
-		#        happens only 10 lines above.  But if I don't?  Then 'bench execute' fails with KeyError: 'Global Defaults'
+		# TODO:  Datahenge:  No Idea why repeating this check is necessary here.  The same code is written only 
+		#        10 lines above this.  But if I don't?  Then 'bench execute' fails with KeyError: 'Global Defaults'
 		#        Pretty crazy stuff.
 		if not doctype in self.value_cache:
 			self.value_cache = self.value_cache[doctype] = {}
 
-		# TODO:  Datahenge:  If the SQL result is a DateTime, would be great if we applied a datetime.date format
+		# TODO:  Datahenge:  If the SQL result is a DateTime, would be great if framework applied a datetime.date format
 		#        immediately to what's in the cache.
 		self.value_cache[doctype][fieldname] = val
 

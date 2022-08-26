@@ -1008,7 +1008,7 @@ class Document(BaseDocument):
 		try:
 			self.save()
 		except Exception as ex:
-			self.docstatus = 0  # NOTE: Totally crazy that I have to do this shit.  Do I need to rollback too?
+			self.docstatus = 0  # NOTE: Was very shocked I had to add this.  Do I need to rollback too?
 			frappe.whatis("What we have here is a failure to Submit.  Ideally, should this not rollback?", frontend=False)
 			raise ex
 
