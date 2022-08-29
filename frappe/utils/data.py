@@ -3,13 +3,20 @@
 
 from __future__ import unicode_literals
 
-import frappe
-import operator
+import datetime
 import json
-import re, datetime, math, time
+import math
+import operator
+import re
+import time
+
 from six.moves.urllib.parse import quote, urljoin
 from six import iteritems, text_type, string_types, integer_types
+
+import frappe
 from frappe.desk.utils import slug
+
+# pylint: disable=invalid-name, too-many-return-statements
 
 DATE_FORMAT = "%Y-%m-%d"
 TIME_FORMAT = "%H:%M:%S.%f"
@@ -29,6 +36,11 @@ def getdate(string_date=None):
 	from dateutil import parser
 	from dateutil.parser._parser import ParserError
 
+	# Datahenge: Hotfix because some function (unknown) is passing a string 'null', which won't parse
+	if string_date and isinstance(string_date, str) and string_date == 'null':
+		string_date = None
+	# DH
+
 	if not string_date:
 		return get_datetime().date()
 	if isinstance(string_date, datetime.datetime):
@@ -42,7 +54,7 @@ def getdate(string_date=None):
 	try:
 		return parser.parse(string_date).date()
 	except ParserError:
-		frappe.whatis(f"Bad value for 'string_date': {string_date}")
+		# frappe.whatis(f"Bad value for 'string_date': {string_date}")
 		frappe.throw(frappe._('{} is not a valid date string.').format(
 			frappe.bold(string_date)
 		), title=frappe._('Invalid Date'))
@@ -288,8 +300,8 @@ def get_time_str(timedelta_obj):
 	if isinstance(timedelta_obj, string_types):
 		timedelta_obj = to_timedelta(timedelta_obj)
 
-	hours, remainder = divmod(timedelta_obj.seconds, 3600)
-	minutes, seconds = divmod(remainder, 60)
+	hours, _remainder = divmod(timedelta_obj.seconds, 3600)
+	minutes, seconds = divmod(_remainder, 60)
 	return "{0}:{1}:{2}".format(hours, minutes, seconds)
 
 def get_user_date_format():
@@ -608,8 +620,10 @@ def floor(s):
 		number representing the largest integer less than or equal to the specified number
 
 	"""
-	try: num = cint(math.floor(flt(s)))
-	except: num = 0
+	try:
+		num = cint(math.floor(flt(s)))
+	except:  # pylint: disable=bare-except
+		num = 0
 	return num
 
 def ceil(s):
@@ -627,8 +641,10 @@ def ceil(s):
 		smallest integer greater than or equal to the given number
 
 	"""
-	try: num = cint(math.ceil(flt(s)))
-	except: num = 0
+	try:
+		num = cint(math.ceil(flt(s)))
+	except:  # pylint: disable=bare-except
+		num = 0
 	return num
 
 def cstr(s, encoding='utf-8'):
@@ -1522,7 +1538,7 @@ def get_user_info_for_avatar(user_id):
 		user_info["name"] = frappe.get_cached_value("User", user_id, "fullname")
 		user_info["image"] = frappe.get_cached_value("User", user_id, "user_image")
 	except Exception:
-		frappe.local.message_log = []
+		frappe.local.message_log = []  # pylint: disable=assigning-non-slot
 	return user_info
 
 
