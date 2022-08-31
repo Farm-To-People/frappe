@@ -423,9 +423,11 @@ class BaseDocument(object):
 				), list(d.values()) + [name])
 			if DH_DEBUG_UPDATE:
 				print(f"SQL UPDATE ({self.doctype} : {self.name})")
-		except Exception as e:
-			if frappe.db.is_unique_key_violation(e):
-				self.show_unique_validation_message(e)
+		except Exception as ex:
+			if frappe.db.is_unique_key_violation(ex):
+				self.show_unique_validation_message(ex)
+			if frappe.db.is_deadlocked(ex):
+				print(f"Deadlock while trying to update table 'tab{self.doctype}' {columns}")
 			else:
 				raise
 
