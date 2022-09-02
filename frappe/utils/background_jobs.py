@@ -3,6 +3,7 @@ import redis
 from rq import Connection, Queue, Worker
 from rq.logutils import setup_loghandlers
 from frappe.utils import cstr
+import pathlib
 from collections import defaultdict
 import frappe
 import os, socket, time
@@ -42,9 +43,10 @@ def read_queue_names_from_disk():
 	site_config = frappe._dict(frappe.get_site_config())  # pylint: disable=protected-access, assigning-non-slot
 	if not site_config:
 		sites_path = os.environ.get("SITES_PATH", ".")  # read from environment variable, or 'assume' we are in Bench directory.
+		sites_path = pathlib.Path(sites_path).resolve()  # Make the path absolute, resolving any symlinks
 		site_config = frappe._dict(frappe.get_site_config(sites_path=sites_path))
 		if not site_config:
-			raise Exception("Unable to read from common_site_config.json")
+			raise Exception(f"Unable to read from 'common_site_config.json' from site path '{sites_path}'")
 
 	if not hasattr(site_config, 'worker_queues'):
 		print("WARNING: Missing key 'worker_queues' in Site Configuration; using fallback result for Worker Queue names.")
