@@ -904,6 +904,7 @@ def get_doc(*args, **kwargs):
 
 	:param arg1: DocType name as string **or** document JSON.
 	:param arg2: [optional] Document name as string.
+	:param for_update: [optional] select document for update.
 
 	Examples:
 

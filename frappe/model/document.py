@@ -30,6 +30,8 @@ from frappe.utils.data import get_absolute_url
 
 # pylint: disable=invalid-name, disable=protected-access
 
+DEBUG_ENV_VARIABLE="FTP_DEBUG_DOCUMENT"  # if this OS environment variable = 1, then dprint() messages will print to stdout.
+
 # once_only validation
 # methods
 
@@ -1501,13 +1503,26 @@ class Document(BaseDocument):
 
 		return f"{doctype}({name})"
 
-	def get_parent_doc(self):
+	def get_parent_doc(self, new_parent_doc=None):
 		"""
-		Return a document's parent document.
+		Return a child document's parent document.
+		Created By Datahenge
 		"""
-		# Datahenge: Very surprising this doesn't already exist.
+		if new_parent_doc:
+			self.parent_doc = new_parent_doc
+			return self.parent_doc
+		if hasattr(self, 'parent_doc') and self.parent_doc:
+			return self.parent_doc
+		self.parent_doc = self.read_parent_doc_from_db()
+		return self.parent_doc
+
+	def read_parent_doc_from_db(self):
+		"""
+		Return a document's parent document from SQL
+		Created By Datahenge
+		"""
 		if self.parenttype and self.parent:
-			return frappe.get_doc(self.parenttype, self.parent)	
+			return frappe.get_doc(self.parenttype, self.parent)
 		raise ValueError(f"Document '{self.name}' of type '{self.doctype}' does not have a parent Document.")
 
 	# -------------------------------
@@ -1742,7 +1757,7 @@ class Document(BaseDocument):
 		"""
 		# NOTE: Very Important to set the value inside "flags".  Otherwise, the data is lost during things like delete().
 
-		if not self.meta.get('istable'):
+		if not self.meta.get('istable'):  # Datahenge: Terrible name.  Really means 'is_parent'
 			return self.flags.pop("called_via_parent", False)  # important to set a default, or you get a Key Errror.
 
 		if hasattr(self, "flags") and hasattr(self.flags, "called_via_parent") and self.flags.called_via_parent is True:
@@ -1892,3 +1907,4 @@ def get_document_datafield_names(doctype_name, include_child_tables=True):
 					if docfield.fieldtype in table_fields]
 
 	return sorted(result)
+
