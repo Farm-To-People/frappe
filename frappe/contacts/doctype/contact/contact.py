@@ -129,6 +129,19 @@ class Contact(Document):
 		if not primary_number_exists:
 			setattr(self, fieldname, "")
 
+
+	# Datahenge Additions ->
+	def remove_email_addresses(self, autosave=False):
+		"""
+		Remove all email addresses from a Contact.
+		"""
+		if self.email_ids:
+			for each_row in self.email_ids:
+				self.remove(each_row)
+			if autosave:
+				self.save(ignore_permissions=True)
+	# <- Datahenge Additions
+
 def get_default_contact(doctype, name):
 	'''Returns default contact for the given doctype, name'''
 	out = frappe.db.sql('''select parent,
