@@ -7,7 +7,7 @@ import base64
 import binascii
 import json
 from urllib.parse import urlencode, urlparse
-
+from six import iteritems
 import frappe
 import frappe.client
 import frappe.handler
@@ -16,7 +16,7 @@ from frappe.utils.response import build_response
 from frappe.utils.data import sbool
 
 from frappe.model.document import Document as DocumentType
-from six import iteritems
+
 # Datahenge: See line 98.
 
 def handle():
@@ -289,7 +289,7 @@ def validate_api_key_secret(api_key, api_secret, frappe_authorization_source=Non
 	doc_secret = frappe.utils.password.get_decrypted_password(doctype, doc, fieldname='api_secret')
 	if api_secret == doc_secret:
 		if doctype == 'User':
-			user = frappe.db.get_value(
+			user: str = frappe.db.get_value(
 				doctype="User",
 				filters={"api_key": api_key},
 				fieldname=["name"]
@@ -298,7 +298,10 @@ def validate_api_key_secret(api_key, api_secret, frappe_authorization_source=Non
 			user = frappe.db.get_value(doctype, doc, 'user')
 		if frappe.local.login_manager.user in ('', 'Guest'):
 			frappe.set_user(user)
+		print(f"Successful API authentication for User {user} from IP Address {frappe.local.request_ip}")
 		frappe.local.form_dict = form_dict  # pylint: disable=assigning-non-slot
+		return True
+	return False
 
 
 def validate_auth_via_hooks():
