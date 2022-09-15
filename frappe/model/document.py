@@ -1760,7 +1760,7 @@ class Document(BaseDocument):
 		if not self.meta.get('istable'):  # Datahenge: Terrible name.  Really means 'is_parent'
 			return self.flags.pop("called_via_parent", False)  # important to set a default, or you get a Key Errror.
 
-		if hasattr(self, "flags") and hasattr(self.flags, "called_via_parent") and self.flags.called_via_parent is True:
+		if hasattr(self, "flags") and ("called_via_parent" in self.flags) and self.flags.get("called_via_parent") is True:
 			return True
 
 		if bool(parent_doc):
@@ -1770,7 +1770,7 @@ class Document(BaseDocument):
 		return False
 
 	def get_called_via_parent(self):
-		if hasattr(self, "flags") and hasattr(self.flags, "called_via_parent") and self.flags.called_via_parent is True:
+		if hasattr(self, "flags") and ("called_via_parent" in self.flags) and self.flags.get("called_via_parent") is True:
 			return True
 		return False
 
@@ -1907,4 +1907,3 @@ def get_document_datafield_names(doctype_name, include_child_tables=True):
 					if docfield.fieldtype in table_fields]
 
 	return sorted(result)
-
