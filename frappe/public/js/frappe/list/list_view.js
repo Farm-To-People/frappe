@@ -365,18 +365,22 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		this.columns = this.columns.slice(0, this.list_view_settings.total_fields || total_fields);
 
+		// frappe.msgprint(`Settings: ${Object.keys(this.settings)}`);
+		// frappe.msgprint(`Hide name column 2: ${this.settings.hide_name_column}`);
+		// frappe.msgprint(`Title Field: ${this.meta.title_field}`);
 		if (
 			!this.settings.hide_name_column &&
 			this.meta.title_field !== 'name'
-		) {
-			this.columns.push({
-				type: "Field",
-				df: {
-					label: __("ID"),  // Farm To People
-					fieldname: "name",
-				},
-			});
-		}
+		)
+			{
+				this.columns.push({
+					type: "Field",
+					df: {
+						label: __("ID"),  // Farm To People
+						fieldname: "name",
+					},
+				});
+  			}
 	}
 
 	reorder_listview_fields() {

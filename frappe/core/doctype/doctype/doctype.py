@@ -1145,6 +1145,8 @@ def validate_permissions(doctype, for_remove=False, alert=False):
 				if d.get(invalid): d.set(invalid, 0)
 
 	def check_permission_dependency(d):
+
+		# Datahenge: Getting rid of this. Going to allow Cancel without having to go through Submit first.
 		if d.cancel and not d.submit:
 			frappe.throw(_("{0}: Cannot set Cancel without Submit").format(get_txt(d)))
 

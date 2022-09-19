@@ -178,9 +178,11 @@
   },
   {
    "default": "0",
+   "description": "When marked, the web UI mentions this feature is experimental.",
    "fieldname": "beta",
    "fieldtype": "Check",
-   "label": "Beta"
+   "label": "Beta",
+   "read_only": 1
   },
   {
    "fieldname": "fields_section_break",
@@ -629,7 +631,7 @@
    "link_fieldname": "reference_doctype"
   }
  ],
- "modified": "2021-09-02 17:42:28.228192",
+ "modified": "2022-09-16 22:00:21.418294",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocType",
