@@ -14,7 +14,7 @@ else:
 	from builtins import FileNotFoundError
 
 class SiteNotSpecifiedError(Exception):
-	def __init__(self, *args, **kwargs):
+	def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
 		self.message = "Please specify --site sitename"
 		super(Exception, self).__init__(self.message)
 
@@ -35,10 +35,6 @@ class DoesNotExistError(ValidationError):
 
 class PageDoesNotExistError(ValidationError):
 	http_status_code = 404
-
-# Datahenge: Use case is performing a PUT against a read-only field.
-class MethodNotAllowed(ValidationError):
-	http_status_code = 405
 
 class NameError(Exception):
 	http_status_code = 409
@@ -120,3 +116,14 @@ class InvalidAuthorizationPrefix(CSRFTokenError): pass
 class InvalidAuthorizationToken(CSRFTokenError): pass
 class InvalidDatabaseFile(ValidationError): pass
 class ExecutableNotFound(FileNotFoundError): pass
+
+# Datahenge Exceptions
+class Forbidden(Exception):
+	"""
+	Used to indicate a function or logic path is explicitly forbidden, for some reason the developer should indicate.
+	"""
+	http_status_code = 403
+
+class MethodNotAllowed(ValidationError):
+	# Datahenge: Use case is performing a PUT against a read-only field
+	http_status_code = 405
