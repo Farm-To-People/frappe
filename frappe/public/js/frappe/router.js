@@ -51,7 +51,8 @@ $('body').on('click', 'a', function(e) {
 		return override('/app');
 	}
 
-	if (href.startsWith('#')) {
+	// Farm To People: Check if href exists first, before trying to call a method.
+	if (href && href.startsWith('#')) {
 		// target startswith "#", this is a v1 style route, so remake it.
 		return override(e.currentTarget.hash);
 	}
