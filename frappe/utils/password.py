@@ -40,6 +40,7 @@ passlibctx = CryptContext(
 
 
 def get_decrypted_password(doctype, name, fieldname='password', raise_exception=True):
+	# Datahenge: Improving on the terrible error handling here.
 	auth = frappe.db.sql('''select `password` from `__Auth`
 		where doctype=%(doctype)s and name=%(name)s and fieldname=%(fieldname)s and encrypted=1''',
 		{ 'doctype': doctype, 'name': name, 'fieldname': fieldname })
@@ -51,7 +52,9 @@ def get_decrypted_password(doctype, name, fieldname='password', raise_exception=
 			raise Exception(f"Failure get password via decrypt: {ex}") from ex
 
 	elif raise_exception:
-		frappe.throw(_('Password not found'), frappe.AuthenticationError)
+		# Datahenge: ABSOLUTELY NOT.  The frappe.AuthenticationError destroys the sessions's login.
+		# frappe.throw(_('Password not found'), frappe.AuthenticationError)
+		raise Exception(f"Unable to find password in Auth for DocType '{doctype}', name '{name}'")
 
 
 def set_encrypted_password(doctype, name, pwd, fieldname='password'):
