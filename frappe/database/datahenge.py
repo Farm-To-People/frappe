@@ -3,7 +3,7 @@
 # NOTE:  I'm writing this class here in Frappe App, so I don't have to worry about circular references (if I were to write in FTP, for example)
 
 import os
-import time
+# import time
 import json
 import frappe
 
@@ -13,7 +13,7 @@ class SQLTransaction():
 	"""
 	# NOTES:
 	#
-	# 0. Unlike Microsoft SQL Server, MySQL/MariaDB has no concept of nested transactions, with levels/depth.
+	# 0. Unlike Microsoft SQL Server, MySQL/MariaDB has no concept of nested SQL transactions, with levels/depth.
 	#
 	# 1. Without AUTOCOMMIT=0, a SQL "transaction" is instantiated whenever any CRUD happens.  Yes, including SELECT statements!
 	# You can easily duplicate this by querying @@in_transaction, SELECT any table, then query @@in_transaction a 2nd time.
@@ -155,7 +155,7 @@ class SQLTransaction():
 		# After any SQL COMMIT, it's important to sleep for a moment!.  Otherwise, you're querying TRX data before the MySQL
 		# server has had an opportunity to update itself.  And you'll get a false negative about Uncommitted Transactions.
 		# https://stackoverflow.com/questions/34303079/how-do-i-determine-if-i-have-uncommitted-writes-in-a-mysql-transaction
-		
+
 		frappe.db.sql("SELECT SLEEP(0.5);")
 
 		transaction_details = SQLTransaction.get_sql_transaction_details()

@@ -452,6 +452,8 @@ frappe.ui.form.ControlLink = frappe.ui.form.ControlData.extend({
 			this.docname, value);
 	},
 	validate_link_and_fetch: function(df, doctype, docname, value) {
+
+		// console.log(`validate_link_and_fetch() df=${df}, doctype=${doctype}, docname=${docname}, value=${value}`);
 		if(value) {
 			return new Promise((resolve) => {
 				var fetch = '';
