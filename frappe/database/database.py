@@ -814,9 +814,9 @@ class Database(object):
 		#
 		if debug_mode:
 			if not SQLTransaction.in_transaction():
-				print("WARNING: Pointless call to db.commit(); no SQL Transaction exists.")
+				frappe.whatis("WARNING: Pointless call to db.commit(); no SQL Transaction exists.")
 			elif not SQLTransaction.exist_uncommitted_changes():
-				print("WARNING: Pointless call to db.commit(); there are no uncommitted SQL changes.")
+				frappe.whatis("WARNING: Pointless call to db.commit(); there are no uncommitted SQL changes.")
 			# SQLTransaction.give_commit_advice()  # Datahenge function.
 
 		# SQL Changes are about to be committed.
@@ -831,6 +831,8 @@ class Database(object):
 			frappe.call(method[0], *(method[1] or []), **(method[2] or {}))
 
 		self.sql("COMMIT")
+		if debug_mode:
+			frappe.whatis("--> SQL COMMIT")
 
 		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 		self.flush_realtime_log()

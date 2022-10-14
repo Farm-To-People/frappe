@@ -17,8 +17,6 @@ from frappe.utils.data import sbool
 
 from frappe.model.document import Document as DocumentType
 
-# Datahenge: See line 98.
-
 def handle():
 	"""
 	Handler for `/api` methods
