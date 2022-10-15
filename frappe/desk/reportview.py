@@ -19,7 +19,17 @@ from frappe.model.base_document import get_controller
 @frappe.whitelist(allow_guest=True)
 @frappe.read_only()
 def get():
+	"""
+	Datahenge: Not sure the point of this.  But it's throwing Permission errors for various DocTypes:
+		BTU Task Log
+		Web Subscription Cadence
+	"""
 	args = get_form_params()
+
+	if args.doctype in ('BTU Task Log', 'Web Subscription Cadence'):
+		frappe.whatis(args)
+		print(f"Session User: {frappe.session.user}")
+
 	# If virtual doctype get data from controller het_list method
 	if frappe.db.get_value("DocType", filters={"name": args.doctype}, fieldname="is_virtual"):
 		controller = get_controller(args.doctype)
