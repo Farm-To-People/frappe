@@ -72,7 +72,7 @@ class SQLTransaction():
 	@staticmethod
 	def in_transaction():
 		"""
-		Returns a boolean True if inside a MySQL Transaction (which happens immediately after most SQL statemnets, including SELECT.
+		Returns a boolean True if inside a MySQL Transaction (which happens immediately after most SQL statements, including SELECT.
 		"""
 		query_result = frappe.db.sql("SELECT @@in_transaction AS in_transaction;", as_dict=True)
 		if query_result:

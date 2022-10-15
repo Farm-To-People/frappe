@@ -796,7 +796,7 @@ class Database(object):
 			if SQLTransaction.exist_uncommitted_changes():
 				frappe.whatis("WARNING: Implicit SQL Commit (calling db.begin() when already inside a SQL Transaction)")
 			# Datahenge: This thread variable allows me to bypass Frappe/ERPNext code that performs implicit commits, via begin().
-			if frappe.local.dh_ignore_implicit_transactions:
+			if hasattr(frappe.local, "dh_ignore_implicit_transactions") and frappe.local.dh_ignore_implicit_transactions:
 				raise Exception("ERROR: Skipping db.begin() because it would implicitly commit changes to the database, and variable 'frappe.local.dh_ignore_implicit_transactions' is already set.")
 
 		self.sql("START TRANSACTION")
