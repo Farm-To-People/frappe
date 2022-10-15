@@ -20,15 +20,22 @@ from frappe.model.base_document import get_controller
 @frappe.read_only()
 def get():
 	"""
-	Datahenge: Not sure the point of this.  But it's throwing Permission errors for various DocTypes:
-		BTU Task Log
-		Web Subscription Cadence
+	Datahenge:
+		Not sure the point of this.  It's definitely not part of a "Report", so the module name reportview.py is misleading.
+
+		It's throwing Permission errors for a few DocTypes, when Guest:
+			BTU Task Log
+			Web Subscription Cadence
+
+		Not sure why it's attempting this; Guests cannot view those DocTypes.
 	"""
 	args = get_form_params()
 
-	if args.doctype in ('BTU Task Log', 'Web Subscription Cadence'):
-		frappe.whatis(args)
-		print(f"Session User: {frappe.session.user}")
+	# Datahenge Bug Fix:
+	if frappe.session.user == 'Guest':
+		if args.doctype in ('BTU Task Log', 'Web Subscription Cadence'):
+			# Don't waste time trying to query DocTypes you're not allowed to query:
+			return None
 
 	# If virtual doctype get data from controller het_list method
 	if frappe.db.get_value("DocType", filters={"name": args.doctype}, fieldname="is_virtual"):

@@ -54,7 +54,7 @@ def getdate(string_date=None):
 	try:
 		return parser.parse(string_date).date()
 	except ParserError:
-		# frappe.whatis(f"Bad value for 'string_date': {string_date}")
+		# Bad value for argument 'string_date'
 		frappe.throw(frappe._('{} is not a valid date string.').format(
 			frappe.bold(string_date)
 		), title=frappe._('Invalid Date'))
