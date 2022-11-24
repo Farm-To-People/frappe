@@ -48,7 +48,8 @@ frappe.ui.form.Dashboard = class FormDashboard {
 			css_class: 'form-links',
 			hidden: 1,
 			collapsible: 1,
-			body_html: this.transactions_area
+			body_html: this.transactions_area,
+			id: "frappe-Connections"
 		});
 
 
@@ -632,6 +633,12 @@ class Section {
 			}
 			if (this.df.hide_border) {
 				this.wrapper.toggleClass("hide-border", true);
+			}
+
+			// Brian Pond: Add the ability to give HTML elements an ID (seems like a huge gap without this)
+			if (this.df.id) {
+				// wrapper is some kind of JQuery object.
+				this.wrapper.attr("id", this.df.id);
 			}
 		}
 

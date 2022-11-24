@@ -680,7 +680,16 @@ $.extend(frappe.model, {
 			fieldtype = fieldtype.fieldtype;
 		}
 		return frappe.model.numeric_fieldtypes.includes(fieldtype);
-	}
+	},
+
+	/*  Datahenge: This add the frappe.model.disable_printing() method.
+		NOTE:  I had to perform a 'bench build' command before this new JS code would take effect.
+	*/
+	disable_printing: function(doctype) {
+		if(!doctype) return false;
+		return locals.DocType[doctype]
+			&& locals.DocType[doctype].disable_printing;
+	},
 });
 
 // legacy

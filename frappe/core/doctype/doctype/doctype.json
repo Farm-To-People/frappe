@@ -46,6 +46,7 @@
   "view_settings",
   "title_field",
   "search_fields",
+  "disable_printing",
   "default_print_format",
   "sort_field",
   "sort_order",
@@ -550,6 +551,13 @@
   {
    "fieldname": "column_break_51",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Disable all printing, regardless of Role Permissions.",
+   "fieldname": "disable_printing",
+   "fieldtype": "Check",
+   "label": "Disable Printing"
   }
  ],
  "icon": "fa fa-bolt",
@@ -631,7 +639,7 @@
    "link_fieldname": "reference_doctype"
   }
  ],
- "modified": "2022-09-16 22:00:21.418294",
+ "modified": "2022-11-22 19:13:06.508487",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocType",

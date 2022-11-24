@@ -832,7 +832,7 @@ class Database(object):
 
 		self.sql("COMMIT")
 		if debug_mode:
-			frappe.whatis("--> SQL COMMIT (Releasing Row Locks")
+			frappe.whatis("--> SQL COMMIT (Releasing Row Locks)")
 
 		frappe.local.rollback_observers = []  # pylint: disable=assigning-non-slot
 		self.flush_realtime_log()

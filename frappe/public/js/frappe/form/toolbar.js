@@ -242,9 +242,22 @@ frappe.ui.form.Toolbar = class Toolbar {
 		const allow_print_for_draft = cint(print_settings.allow_print_for_draft);
 		const allow_print_for_cancelled = cint(print_settings.allow_print_for_cancelled);
 
-		if (!is_submittable || docstatus == 1  ||
-			(allow_print_for_cancelled && docstatus == 2)||
-			(allow_print_for_draft && docstatus == 0)) {
+		// Datahenge: Add option to disable printing for a particular DocType:
+		// NOTE: After I implemented this, discovered there was another option by just editing the refresh() method:
+		// https://discuss.erpnext.com/t/how-to-hide-print-button-with-script-from-sales-invoice/96482
+		let can_print;
+
+		// Note:  Had to write new function 'disable_printing' in JS file frappe/frappe/public/js/frappe/model/model.js
+		if (frappe.model.disable_printing(this.frm.doc.doctype)) {
+			can_print = false;
+		} else {
+			can_print = !is_submittable ||
+		                docstatus == 1  ||
+			            (allow_print_for_cancelled && docstatus == 2) ||
+			            (allow_print_for_draft && docstatus == 0);
+		}
+
+		if (can_print) {
 			if (frappe.model.can_print(null, me.frm) && !this.frm.meta.issingle) {
 				this.page.add_menu_item(__("Print"), function() {
 					me.frm.print_doc();
