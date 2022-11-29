@@ -57,8 +57,9 @@ frappe.ui.form.on('DocType', {
 		}
 
 		// set label for "In List View" for child tables
+		// Datahenge: Confusing; there's no reason to rename this.
 		frm.get_docfield('fields', 'in_list_view').label = frm.doc.istable ?
-			__('In Grid View') : __('In List View');
+			__('In List View') : __('In List View');
 
 		frm.events.autoname(frm);
 	},

@@ -22,6 +22,7 @@ from frappe.website.utils import get_home_page
 
 from six.moves.urllib.parse import quote
 
+# pylint: disable=assigning-non-slot
 
 class HTTPRequest:
 	def __init__(self):
