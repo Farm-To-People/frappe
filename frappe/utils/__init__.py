@@ -26,6 +26,7 @@ import frappe
 from frappe.utils.data import *
 from frappe.utils.html_utils import sanitize_html
 
+# pylint: disable=invalid-name
 
 default_fields = ['doctype', 'name', 'owner', 'creation', 'modified', 'modified_by',
 	'parent', 'parentfield', 'parenttype', 'idx', 'docstatus']
@@ -37,7 +38,7 @@ def get_fullname(user=None):
 		user = frappe.session.user
 
 	if not hasattr(frappe.local, "fullnames"):
-		frappe.local.fullnames = {}
+		frappe.local.fullnames = {}  # pylint: disable=assigning-non-slot
 
 	if not frappe.local.fullnames.get(user):
 		p = frappe.db.get_value("User", user, ["first_name", "last_name"], as_dict=True)
@@ -122,7 +123,7 @@ def validate_email_address(email_str, throw=False):
 
 		else:
 			email_id = extract_email_id(e)
-			match = re.match("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", email_id.lower()) if email_id else None
+			match = re.match(r"[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", email_id.lower()) if email_id else None
 
 			if not match:
 				_valid = False
@@ -292,13 +293,13 @@ def remove_blanks(d):
 
 def strip_html_tags(text):
 	"""Remove html tags from text"""
-	return re.sub("\<[^>]*\>", "", text)
+	return re.sub(r"\<[^>]*\>", "", text)
 
 def get_file_timestamp(fn):
 	"""
 		Returns timestamp of the given file
 	"""
-	from frappe.utils import cint
+	# from frappe.utils import cint
 
 	try:
 		return str(cint(os.stat(fn).st_mtime))
@@ -505,7 +506,7 @@ def is_markdown(text):
 	elif "<!-- html -->" in text:
 		return False
 	else:
-		return not re.search("<p[\s]*>|<br[\s]*>", text)
+		return not re.search(r"<p[\s]*>|<br[\s]*>", text)
 
 def get_sites(sites_path=None):
 	if not sites_path:
@@ -615,7 +616,7 @@ def check_format(email_id):
 
 def get_name_from_email_string(email_string, email_id, name):
 	name = email_string.replace(email_id, '')
-	name = re.sub('[^A-Za-z0-9\u00C0-\u024F\/\_\' ]+', '', name).strip()
+	name = re.sub(r'[^A-Za-z0-9\u00C0-\u024F\/\_\' ]+', '', name).strip()
 	if not name:
 		name = email_id
 	return name
@@ -772,7 +773,7 @@ def set_request(**kwargs):
 	from werkzeug.test import EnvironBuilder
 	from werkzeug.wrappers import Request
 	builder = EnvironBuilder(**kwargs)
-	frappe.local.request = Request(builder.get_environ())
+	frappe.local.request = Request(builder.get_environ())  # pylint: disable=assigning-non-slot
 
 def get_html_for_route(route):
 	from frappe.website import render
