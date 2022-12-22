@@ -68,6 +68,9 @@ class Contact(Document):
 				return True
 
 	def add_email(self, email_id, is_primary=0, autosave=False):
+		# Datahenge: Enforce lowercase email addresses:
+		if email_id:
+			email_id = email_id.lower()
 		if not frappe.db.exists("Contact Email", {"email_id": email_id, "parent": self.name}):
 			self.append("email_ids", {
 				"email_id": email_id,

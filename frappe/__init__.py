@@ -1964,7 +1964,7 @@ def show_callstack():
 
 def whatis(message, backend=True, frontend=True):
 	"""
-	This function can be called to assist in debugging, by explain a variable's value, type, and call stack.
+	This function can be called to assist in debugging, showing an object's value, type, and call stack.
 	"""
 	inspected_stack = inspect.stack()
 
