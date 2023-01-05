@@ -19,7 +19,7 @@ import schedule
 
 # imports - module imports
 import frappe
-from frappe.core.doctype.user.user import STANDARD_USERS
+# from frappe.core.doctype.user.user import STANDARD_USERS
 from frappe.installer import update_site_config
 from frappe.utils import get_sites, now_datetime
 from frappe.utils.background_jobs import get_jobs
