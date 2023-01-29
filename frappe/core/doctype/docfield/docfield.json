@@ -129,6 +129,7 @@
   },
   {
    "depends_on": "eval:in_list(['Data', 'Link', 'Dynamic Link', 'Password', 'Select', 'Read Only', 'Attach', 'Attach Image', 'Int'], doc.fieldtype)",
+   "description": "For strings, the width of the SQL column.",
    "fieldname": "length",
    "fieldtype": "Int",
    "label": "Length"
@@ -503,7 +504,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2021-10-11 20:09:52.648983",
+ "modified": "2023-01-24 17:33:34.981086",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",
