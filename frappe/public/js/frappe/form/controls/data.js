@@ -128,7 +128,8 @@ frappe.ui.form.ControlData = frappe.ui.form.ControlInput.extend({
 		if (!this.df.parent) return;
 
 		// Datahenge: Using this to disable automatic checking of names for duplicates.
-		// Sometimes it's unnecessary.  It also harms performance, by spamming the Web Server and DB with queries.
+		// 1. Sometimes it's just unnecessary and unwanted.
+		// 2. It also harms performance, by spamming the Web Server and DB with queries for every, single character typed.
 		if (this.frm && this.frm.disable_autoname_check) {
 			return;
 		}

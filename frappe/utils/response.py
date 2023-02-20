@@ -124,7 +124,8 @@ def json_handler(obj):
 	# serialize date
 	import collections.abc
 
-	if isinstance(obj, (datetime.date, datetime.timedelta, datetime.datetime)):
+	# DH: Adding support for Postgres
+	if isinstance(obj, (datetime.date, datetime.timedelta, datetime.time, datetime.datetime)):
 		return text_type(obj)
 
 	elif isinstance(obj, decimal.Decimal):
