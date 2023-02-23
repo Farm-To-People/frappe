@@ -71,7 +71,8 @@ class Address(Document):
 		for customer_key in customer_keys:
 			# For each customer found, update the Orders.
 			filters = { "delivery_date": [">=", tomorrow_date],
-			            "customer": customer_key }
+			            "customer": customer_key,
+						"is_past_cutoff": False }  # Bug fix February 22nd, 2023, from Slack conversation and customer Gleap.
 			daily_orders = frappe.get_list("Daily Order", filters=filters, pluck='name')
 			for daily_order in daily_orders:
 				if verbose:
