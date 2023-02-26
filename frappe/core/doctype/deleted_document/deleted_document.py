@@ -3,8 +3,8 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import frappe
 import json
+import frappe
 from frappe.desk.doctype.bulk_update.bulk_update import show_progress
 from frappe.model.document import Document
 from frappe import _
@@ -13,6 +13,12 @@ from frappe import _
 class DeletedDocument(Document):
 	pass
 
+def on_doctype_update():
+	"""
+	Create additional indexes and constraints
+	"""
+	# Datahenge: Adding this index enables filters to actually happen, without wrecking SQL performance.
+	frappe.db.add_index("Deleted Document", ["deleted_name"], index_name="deleted_name_IDX")
 
 @frappe.whitelist()
 def restore(name, alert=True):
