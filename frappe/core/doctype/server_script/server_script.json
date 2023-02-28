@@ -13,6 +13,7 @@
   "api_method",
   "allow_guest",
   "column_break_3",
+  "module",
   "disabled",
   "section_break_8",
   "script",
@@ -24,6 +25,7 @@
    "fieldname": "script_type",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Script Type",
    "options": "DocType Event\nScheduler Event\nPermission Query\nAPI",
    "reqd": 1
@@ -40,6 +42,7 @@
    "fieldname": "reference_doctype",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Reference Document Type",
    "options": "DocType"
   },
@@ -48,7 +51,7 @@
    "fieldname": "doctype_event",
    "fieldtype": "Select",
    "label": "DocType Event",
-   "options": "Before Insert\nBefore Validate\nBefore Save\nAfter Save\nBefore Submit\nAfter Submit\nBefore Cancel\nAfter Cancel\nBefore Delete\nAfter Delete\nBefore Save (Submitted Document)\nAfter Save (Submitted Document)"
+   "options": "Before Insert\nBefore Validate\nBefore Save\nAfter Insert\nAfter Save\nBefore Submit\nAfter Submit\nBefore Cancel\nAfter Cancel\nBefore Delete\nAfter Delete\nBefore Save (Submitted Document)\nAfter Save (Submitted Document)\nOn Payment Authorization"
   },
   {
    "depends_on": "eval:doc.script_type==='API'",
@@ -93,6 +96,12 @@
    "label": "Event Frequency",
    "mandatory_depends_on": "eval:doc.script_type == \"Scheduler Event\"",
    "options": "All\nHourly\nDaily\nWeekly\nMonthly\nYearly\nHourly Long\nDaily Long\nWeekly Long\nMonthly Long"
+  },
+  {
+   "fieldname": "module",
+   "fieldtype": "Link",
+   "label": "Module (for export)",
+   "options": "Module Def"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -102,10 +111,11 @@
    "link_fieldname": "server_script"
   }
  ],
- "modified": "2021-02-18 12:36:19.803425",
+ "modified": "2022-06-13 06:04:20.937969",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Server Script",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -123,5 +133,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

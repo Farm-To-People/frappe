@@ -1,11 +1,9 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
-# License: See license.txt
+# License: MIT. See LICENSE
 
-from __future__ import unicode_literals
 import frappe
-from frappe import throw, _
-
 from frappe.model.document import Document
+
 
 class Currency(Document):
 	def validate(self):

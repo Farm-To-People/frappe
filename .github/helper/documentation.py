@@ -1,7 +1,7 @@
 import sys
-import requests
 from urllib.parse import urlparse
 
+import requests
 
 docs_repos = [
 	"frappe_docs",
@@ -24,17 +24,19 @@ def docs_link_exists(body):
 					parts = parsed_url.path.split('/')
 					if len(parts) == 5 and parts[1] == "frappe" and parts[2] in docs_repos:
 						return True
+				if parsed_url.netloc in ["docs.erpnext.com", "frappeframework.com"]:
+					return True
 
 
 if __name__ == "__main__":
 	pr = sys.argv[1]
-	response = requests.get("https://api.github.com/repos/frappe/frappe/pulls/{}".format(pr))
+	response = requests.get(f"https://api.github.com/repos/frappe/frappe/pulls/{pr}")
 
 	if response.ok:
 		payload = response.json()
-		title = payload.get("title", "").lower()
-		head_sha = payload.get("head", {}).get("sha")
-		body = payload.get("body", "").lower()
+		title = (payload.get("title") or "").lower()
+		head_sha = (payload.get("head") or {}).get("sha")
+		body = (payload.get("body") or "").lower()
 
 		if title.startswith("feat") and head_sha and "no-docs" not in body:
 			if docs_link_exists(body):

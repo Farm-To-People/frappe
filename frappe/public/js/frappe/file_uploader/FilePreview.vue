@@ -13,14 +13,8 @@
 			<div>
 				<a class="flex" :href="file.doc.file_url" v-if="file.doc" target="_blank">
 					<span class="file-name">{{ file.name | file_name }}</span>
-					<div class="ml-2" v-html="private_icon"></div>
 				</a>
-				<span class="flex" v-else>
-					<span class="file-name">{{ file.name | file_name }}</span>
-					<button class="ml-2 btn-reset" @click="$emit('toggle_private')" :title="__('Toggle Public/Private')">
-						<div v-html="private_icon"></div>
-					</button>
-				</span>
+				<span class="file-name" v-else>{{ file.name | file_name }}</span>
 			</div>
 
 			<div>
@@ -28,19 +22,32 @@
 					{{ file.file_obj.size | file_size }}
 				</span>
 			</div>
+
+			<div class="flex config-area">
+				<label v-if="is_optimizable" class="frappe-checkbox"><input type="checkbox" :checked="optimize" @change="$emit('toggle_optimize')">Optimize</label>
+				<label class="frappe-checkbox"><input type="checkbox" :checked="file.private" @change="$emit('toggle_private')">Private</label>
+			</div>
+			<div>
+				<span v-if="file.error_message" class="file-error text-danger">
+					{{ file.error_message }}
+				</span>
+			</div>
 		</div>
 		<div class="file-actions">
 			<ProgressRing
-				v-show="file.uploading && !uploaded"
+				v-show="file.uploading && !uploaded && !file.failed"
 				primary="var(--primary-color)"
 				secondary="var(--gray-200)"
-				radius="24"
+				:radius="24"
 				:progress="progress"
-				stroke="3"
+				:stroke="3"
 			/>
 			<div v-if="uploaded" v-html="frappe.utils.icon('solid-success', 'lg')"></div>
-			<div v-if="file.failed" v-html="frappe.utils.icon('solid-red', 'lg')"></div>
-			<button v-if="!uploaded && !file.uploading" class="btn" @click="$emit('remove')" v-html="frappe.utils.icon('delete', 'md')"></button>
+			<div v-if="file.failed" v-html="frappe.utils.icon('solid-error', 'lg')"></div>
+			<div class="file-action-buttons">
+				<button v-if="is_cropable" class="btn btn-crop muted" @click="$emit('toggle_image_cropper')" v-html="frappe.utils.icon('crop', 'md')"></button>
+				<button v-if="!uploaded && !file.uploading && !file.failed" class="btn muted" @click="$emit('remove')" v-html="frappe.utils.icon('delete', 'md')"></button>
+			</div>
 		</div>
 	</div>
 </template>
@@ -55,7 +62,8 @@ export default {
 	},
 	data() {
 		return {
-			src: null
+			src: null,
+			optimize: this.file.optimize
 		}
 	},
 	mounted() {
@@ -77,17 +85,22 @@ export default {
 		}
 	},
 	computed: {
-		private_icon() {
-			return frappe.utils.icon(this.is_private ? 'lock' : 'unlock');
-		},
 		is_private() {
 			return this.file.doc ? this.file.doc.is_private : this.file.private;
 		},
 		uploaded() {
-			return this.file.total && this.file.total === this.file.progress && !this.file.failed;
+			return this.file.request_succeeded;
 		},
 		is_image() {
 			return this.file.file_obj.type.startsWith('image');
+		},
+		is_optimizable() {
+			let is_svg = this.file.file_obj.type == 'image/svg+xml';
+			return this.is_image && !is_svg && !this.uploaded && !this.file.failed;
+		},
+		is_cropable() {
+			let croppable_types = ['image/jpeg', 'image/png'];
+			return !this.uploaded && !this.file.uploading && !this.file.failed && croppable_types.includes(this.file.file_obj.type);
 		},
 		progress() {
 			let value = Math.round((this.file.progress * 100) / this.file.total);
@@ -172,5 +185,36 @@ export default {
 .file-actions .btn {
 	padding: var(--padding-xs);
 	box-shadow: none;
+}
+
+.file-action-buttons {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.muted {
+	opacity: 0.5;
+	transition: 0.3s;
+}
+
+.muted:hover {
+	opacity: 1;
+}
+
+.frappe-checkbox {
+	font-size: var(--text-sm);
+	color: var(--text-light);
+	display: flex;
+	align-items: center;
+	padding-top: 0.25rem;
+}
+
+.config-area {
+	gap: 0.5rem;
+}
+
+.file-error {
+	font-size: var(--text-sm);
+	font-weight: var(--text-bold);
 }
 </style>

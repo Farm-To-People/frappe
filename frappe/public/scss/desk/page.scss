@@ -51,10 +51,6 @@
 	}
 }
 
-.custom-actions {
-	display: flex;
-}
-
 .page-actions {
 	align-items: center;
 	.btn {
@@ -66,10 +62,15 @@
 		padding: 4px 10px;
 	}
 	.btn-primary, .btn-secondary {
-		min-width: 70px;
+		min-width: 40px;
 	}
 	.custom-btn-group {
 		display: inline-flex;
+	}
+
+	.custom-actions {
+		display: flex;
+		align-items: center;
 	}
 }
 
@@ -83,11 +84,12 @@
 }
 
 .page-head {
-	z-index: 4;
+	z-index: 6;
 	position: sticky;
 	top: var(--navbar-height);
 	background: var(--bg-color);
 	margin-bottom: 5px;
+	transition: 0.5s top;
 	.page-head-content {
 		height: var(--page-head-height);
 	}
@@ -156,26 +158,29 @@
 		.result, .no-result, .freeze {
 			min-height: #{"calc(100vh - 284px)"};
 		}
+	}
 
-		.msg-box {
-			margin-bottom: 4em;
-			font-size: var(--text-sm);
+	.msg-box {
+		margin-bottom: 4em;
+		font-size: var(--text-sm);
 
-			// To compensate for perceived centering
-			.null-state {
-				height: 85px;
-				width: auto;
-				margin-bottom: var(--margin-md);
-				img {
-					fill: var(--fg-color);
-				}
+		// To compensate for perceived centering
+		.null-state {
+			height: 60px;
+			width: auto;
+			margin-bottom: var(--margin-md);
+			img {
+				fill: var(--fg-color);
 			}
+		}
+		p {
+			font-size: var(--text-md);
+		}
 
-			.meta-description {
-				width: 45%;
-				margin-right: auto;
-				margin-left: auto;
-			}
+		.meta-description {
+			width: 45%;
+			margin-right: auto;
+			margin-left: auto;
 		}
 	}
 }

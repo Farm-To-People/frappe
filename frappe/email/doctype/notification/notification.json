@@ -102,7 +102,8 @@
    "default": "0",
    "fieldname": "is_standard",
    "fieldtype": "Check",
-   "label": "Is Standard"
+   "label": "Is Standard",
+   "no_copy": 1
   },
   {
    "depends_on": "is_standard",

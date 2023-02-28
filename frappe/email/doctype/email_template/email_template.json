@@ -12,7 +12,6 @@
   "use_html",
   "response_html",
   "response",
-  "owner",
   "section_break_4",
   "email_reply_help"
  ],
@@ -31,14 +30,6 @@
    "in_list_view": 1,
    "label": "Response",
    "mandatory_depends_on": "eval:!doc.use_html"
-  },
-  {
-   "default": "user",
-   "fieldname": "owner",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Owner",
-   "options": "User"
   },
   {
    "fieldname": "section_break_4",
@@ -66,18 +57,16 @@
  ],
  "icon": "fa fa-comment",
  "links": [],
- "modified": "2020-11-30 14:12:50.321633",
+ "modified": "2023-01-02 03:56:48.437280",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Template",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
-   "create": 1,
    "read": 1,
-   "role": "All",
-   "share": 1,
-   "write": 1
+   "role": "All"
   },
   {
    "create": 1,
@@ -94,5 +83,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

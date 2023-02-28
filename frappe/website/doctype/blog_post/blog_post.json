@@ -17,8 +17,9 @@
   "published",
   "featured",
   "hide_cta",
+  "enable_email_notification",
   "disable_comments",
-  "disable_feedback",
+  "disable_likes",
   "section_break_5",
   "blog_intro",
   "content_type",
@@ -52,6 +53,7 @@
    "default": "0",
    "fieldname": "published",
    "fieldtype": "Check",
+   "hidden": 1,
    "label": "Published"
   },
   {
@@ -112,6 +114,7 @@
    "depends_on": "eval:doc.content_type === 'Markdown'",
    "fieldname": "content_md",
    "fieldtype": "Markdown Editor",
+   "ignore_xss_filter": 1,
    "label": "Content (Markdown)"
   },
   {
@@ -130,7 +133,6 @@
   },
   {
    "default": "0",
-   "description": "Comments on this blog post will be disabled if checked.",
    "fieldname": "disable_comments",
    "fieldtype": "Check",
    "label": "Disable Comments"
@@ -194,11 +196,17 @@
    "length": 60
   },
   {
-   "default": "0",
-   "description": "Feedback on this blog post will be disabled if checked.",
-   "fieldname": "disable_feedback",
+   "default": "1",
+   "description": "Enable email notification for any comment or likes received on your Blog Post.",
+   "fieldname": "enable_email_notification",
    "fieldtype": "Check",
-   "label": "Disable Feedback"
+   "label": "Enable Email Notification"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_likes",
+   "fieldtype": "Check",
+   "label": "Disable Likes"
   }
  ],
  "has_web_view": 1,
@@ -207,8 +215,8 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "max_attachments": 5,
- "modified": "2021-06-14 13:50:02.109719",
+ "make_attachments_public": 1,
+ "modified": "2023-02-17 11:31:32.223524",
  "modified_by": "Administrator",
  "module": "Website",
  "name": "Blog Post",
@@ -240,6 +248,7 @@
  "route": "blog",
  "sort_field": "modified",
  "sort_order": "ASC",
+ "states": [],
  "title_field": "title",
  "track_changes": 1
 }

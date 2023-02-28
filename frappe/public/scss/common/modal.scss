@@ -152,6 +152,8 @@ body.modal-open[style^="padding-right"] {
 
 .modal-minimize {
 	position: initial;
+	height: 0;
+	width: 0;
 
 	.modal-dialog {
 		position: fixed;
@@ -169,7 +171,7 @@ body.modal-open[style^="padding-right"] {
 			border-radius: var(--border-radius-md);
 			border-bottom-right-radius: 0;
 			border-bottom-left-radius: 0;
-			box-shadow: -10px 10px rgba(0, 0, 0, 0.100661);
+			box-shadow: var(--shadow-lg);
 		}
 
 		@include media-breakpoint-down(sm) {
@@ -208,9 +210,12 @@ body.modal-open[style^="padding-right"] {
 	form {
 		display: flex;
 		align-items: center;
+
 		.frappe-control:first-child {
+			&[data-fieldname="sender"] {
+				margin-right: 10px;
+			}
 			flex: 1;
-			margin-bottom: 0px;
 		}
 		.frappe-control:last-child {
 			margin-left: 10px;
@@ -221,6 +226,11 @@ body.modal-open[style^="padding-right"] {
 			}
 		}
 	}
+}
+
+// modal is xs (for grids)
+.modal .hidden-xs {
+	display: none !important;
 }
 
 .dialog-assignment-row {

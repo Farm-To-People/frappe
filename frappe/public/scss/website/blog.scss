@@ -1,3 +1,8 @@
+:root {
+	--comment-timeline-bottom: 60px;
+	--comment-timeline-top: 8px;
+}
+
 .blog-list {
 	display: flex;
 	flex-wrap: wrap;
@@ -9,10 +14,18 @@
 	}
 }
 
+.blog-list-content {
+	margin-bottom: 3rem;
+}
+
 .blog-card {
 	margin-bottom: 2rem;
 	position: relative;
 	width: 100%;
+
+	.card {
+		border: 1px solid var(--border-color)
+	}
 
 	.card-body {
 		display: flex;
@@ -48,12 +61,12 @@
 
 	.blog-card-footer {
 		display: flex;
-		align-items: center;
+		align-items: top;
 		margin-top: 0.5rem;
 
 		.avatar {
+			margin-top: 0.4rem;
 			margin-right: 0.5rem;
-			border-radius: 50%;
 		}
 	}
 }
@@ -89,7 +102,30 @@
 
 		.blog-header {
 			margin-bottom: 3rem;
-			margin-top: 3rem;
+			margin-top: 5rem;
+		}
+	}
+
+	.blog-comments {
+		margin-top: 1rem;
+		margin-bottom: 5rem;
+	}
+
+
+	.feedback-item svg {
+		vertical-align: sub;
+	}
+
+	.blog-feedback {
+		display: flex;
+
+		.like-icon {
+			cursor: pointer;
+
+			&.gray use {
+				fill: var(--gray-600);
+				stroke: none;
+			}
 		}
 	}
 }

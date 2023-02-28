@@ -12,12 +12,12 @@
   "restrict_to_domain",
   "column_break_4",
   "disabled",
+  "is_custom",
   "desk_access",
   "two_factor_auth",
   "navigation_settings_section",
   "search_bar",
   "notifications",
-  "chat",
   "list_settings_section",
   "list_sidebar",
   "bulk_actions",
@@ -25,8 +25,7 @@
   "form_settings_section",
   "form_sidebar",
   "timeline",
-  "dashboard",
-  "is_custom"
+  "dashboard"
  ],
  "fields": [
   {
@@ -84,12 +83,6 @@
    "fieldname": "search_bar",
    "fieldtype": "Check",
    "label": "Search Bar"
-  },
-  {
-   "default": "1",
-   "fieldname": "chat",
-   "fieldtype": "Check",
-   "label": "Chat"
   },
   {
    "fieldname": "list_settings_section",
@@ -155,10 +148,11 @@
  "idx": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-01-27 10:35:37.638350",
+ "modified": "2022-08-05 18:33:27.694065",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Role",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -176,5 +170,7 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "ASC",
- "track_changes": 1
+ "states": [],
+ "track_changes": 1,
+ "translated_doctype": 1
 }

@@ -1,17 +1,15 @@
-#  -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
-# MIT License. See license.txt
+# License: MIT. See LICENSE
 
-from __future__ import unicode_literals
-import unittest
 import frappe
 import frappe.monitor
+from frappe.monitor import MONITOR_REDIS_KEY
+from frappe.tests.utils import FrappeTestCase
 from frappe.utils import set_request
 from frappe.utils.response import build_response
-from frappe.monitor import MONITOR_REDIS_KEY
 
 
-class TestMonitor(unittest.TestCase):
+class TestMonitor(FrappeTestCase):
 	def setUp(self):
 		frappe.conf.monitor = 1
 		frappe.cache().delete_value(MONITOR_REDIS_KEY)

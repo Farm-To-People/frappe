@@ -1,39 +1,37 @@
-
 frappe.ui.form.on("Email Domain", {
-	email_id:function(frm){
+	onload: function (frm) {
+		if (!frm.doc.__islocal) {
+			frm.dashboard.clear_headline();
+			let msg = __(
+				"Changing any setting will reflect on all the email accounts associated with this domain."
+			);
+			frm.dashboard.set_headline_alert(msg);
+		} else {
+			if (!frm.doc.attachment_limit) {
+				frappe.call({
+					method: "frappe.core.api.file.get_max_file_size",
+					callback: function (r) {
+						if (!r.exc) {
+							frm.set_value("attachment_limit", Number(r.message) / (1024 * 1024));
+						}
+					},
+				});
+			}
+		}
+	},
+
+	email_id:function(frm) {
 		frm.set_value("domain_name",frm.doc.email_id.split("@")[1])
 	},
 
 	refresh:function(frm){
-
 		// Farm To People, Datahenge
 		frm.add_custom_button(__("Validate Email Settings"), () => {
 			validate_domain(cur_frm, cur_frm.doc);
 		});
-		// EOM
-
-		if (frm.doc.email_id){
-			frm.set_value("domain_name",frm.doc.email_id.split("@")[1])
-		}
-
-		if (frm.doc.__islocal != 1 && frappe.route_flags.return_to_email_account) {
-			var route = frappe.get_prev_route();
-			delete frappe.route_flags.return_to_email_account;
-			frappe.route_flags.set_domain_values = true
-
-			frappe.route_options = {
-				domain: frm.doc.name,
-				use_imap: frm.doc.use_imap,
-				email_server: frm.doc.email_server,
-				use_ssl: frm.doc.use_ssl,
-				smtp_server: frm.doc.smtp_server,
-				use_tls: frm.doc.use_tls,
-				smtp_port: frm.doc.smtp_port
-			},
-			frappe.set_route(route);
-		}
 	}
-})
+
+});
 
 function validate_domain (caller_frm, doc) {
 	// Validate the email domain's settings:
@@ -48,3 +46,5 @@ function validate_domain (caller_frm, doc) {
 		}
     });
 }
+
+

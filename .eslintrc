@@ -5,7 +5,7 @@
 		"es6": true
 	},
 	"parserOptions": {
-		"ecmaVersion": 9,
+		"ecmaVersion": 11,
 		"sourceType": "module"
 	},
 	"extends": "eslint:recommended",
@@ -134,7 +134,6 @@
 		"Webcam": true,
 		"PhotoSwipe": true,
 		"PhotoSwipeUI_Default": true,
-		"fluxify": true,
 		"io": true,
 		"JsBarcode": true,
 		"L": true,
@@ -148,7 +147,9 @@
 		"context": true,
 		"before": true,
 		"beforeEach": true,
+		"after": true,
 		"qz": true,
-		"localforage": true
+		"localforage": true,
+		"extend_cscript": true
 	}
 }

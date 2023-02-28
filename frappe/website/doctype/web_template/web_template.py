@@ -1,21 +1,14 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe Technologies and contributors
-# For license information, please see license.txt
-
-from __future__ import unicode_literals
+# License: MIT. See LICENSE
 
 import os
 from shutil import rmtree
 
 import frappe
-from frappe.model.document import Document
-from frappe.website.render import clear_cache
 from frappe import _
-from frappe.modules.export_file import (
-	write_document_file,
-	get_module_path,
-	scrub_dt_dn,
-)
+from frappe.model.document import Document
+from frappe.modules.export_file import get_module_path, scrub_dt_dn, write_document_file
+from frappe.website.utils import clear_cache
 
 
 class WebTemplate(Document):
@@ -40,7 +33,7 @@ class WebTemplate(Document):
 
 	def on_update(self):
 		"""Clear cache for all Web Pages in which this template is used"""
-		routes = frappe.db.get_all(
+		routes = frappe.get_all(
 			"Web Page",
 			filters=[
 				["Web Page Block", "web_template", "=", self.name],
@@ -103,7 +96,7 @@ class WebTemplate(Document):
 		"""
 		if standard:
 			template = self.get_template_path()
-			with open(template, "r") as template_file:
+			with open(template) as template_file:
 				template = template_file.read()
 		else:
 			template = self.template

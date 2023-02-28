@@ -2,7 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
- "creation": "2014-03-11 14:55:00",
+ "creation": "2022-01-10 17:29:51.672911",
  "description": "Represents a User in the system.",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -11,15 +11,15 @@
   "message_level",
   "section_break_3",
   "email",
-  "last_name",
-  "language",
-  "column_break0",
   "first_name",
-  "full_name",
-  "time_zone",
-  "column_break_11",
   "middle_name",
+  "last_name",
+  "column_break0",
+  "full_name",
   "username",
+  "column_break_11",
+  "language",
+  "time_zone",
   "send_welcome_email",
   "unsubscribed",
   "user_image",
@@ -44,11 +44,18 @@
   "new_password",
   "logout_all_sessions",
   "reset_password_key",
+  "last_reset_password_key_generated_on",
   "last_password_reset_date",
   "redirect_url",
   "document_follow_notifications_section",
   "document_follow_notify",
   "document_follow_frequency",
+  "column_break_75",
+  "follow_created_documents",
+  "follow_commented_documents",
+  "follow_liked_documents",
+  "follow_assigned_documents",
+  "follow_shared_documents",
   "email_settings",
   "email_signature",
   "thread_notify",
@@ -120,7 +127,7 @@
   {
    "fieldname": "middle_name",
    "fieldtype": "Data",
-   "label": "Middle Name (Optional)",
+   "label": "Middle Name",
    "oldfieldname": "middle_name",
    "oldfieldtype": "Data"
   },
@@ -203,7 +210,8 @@
    "fieldname": "role_profile_name",
    "fieldtype": "Link",
    "label": "Role Profile",
-   "options": "Role Profile"
+   "options": "Role Profile",
+   "permlevel": 1
   },
   {
    "fieldname": "roles_html",
@@ -485,7 +493,7 @@
   {
    "description": "Restrict user from this IP address only. Multiple IP addresses can be added by separating with commas. Also accepts partial IP addresses like (111.111.111)",
    "fieldname": "restrict_ip",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Restrict IP",
    "permlevel": 1
   },
@@ -555,20 +563,22 @@
    "collapsible": 1,
    "fieldname": "api_access",
    "fieldtype": "Section Break",
-   "label": "Api Access"
+   "label": "API Access"
   },
   {
-   "description": "API Key cannot be  regenerated",
+   "description": "API Key cannot be regenerated",
    "fieldname": "api_key",
    "fieldtype": "Data",
    "label": "API Key",
+   "permlevel": 1,
    "read_only": 1,
    "unique": 1
   },
   {
    "fieldname": "generate_keys",
    "fieldtype": "Button",
-   "label": "Generate Keys"
+   "label": "Generate Keys",
+   "permlevel": 1
   },
   {
    "fieldname": "column_break_65",
@@ -578,6 +588,7 @@
    "fieldname": "api_secret",
    "fieldtype": "Password",
    "label": "API Secret",
+   "permlevel": 1,
    "read_only": 1
   },
   {
@@ -596,7 +607,7 @@
    "fieldname": "desk_theme",
    "fieldtype": "Select",
    "label": "Desk Theme",
-   "options": "Light\nDark"
+   "options": "Light\nDark\nAutomatic"
   },
   {
    "fieldname": "module_profile",
@@ -606,11 +617,58 @@
   },
   {
    "default": "Warning",
-   "description": "This setting determines the verbosity level of Messages that are shown by the applications.",
+   "description": "This setting determines the verbosity level of Messages that are shown by the applications. (Datahenge)",
    "fieldname": "message_level",
    "fieldtype": "Select",
    "label": "Message Level",
    "options": "Debug\nInfo\nWarning\nError\nCritical"
+  },
+  {
+    "description": "Stores the datetime when the last reset password key was generated.",
+    "fieldname": "last_reset_password_key_generated_on",
+    "fieldtype": "Datetime",
+    "hidden": 1,
+    "label": "Last Reset Password Key Generated On",
+    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_75",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:(doc.document_follow_notify== 1)",
+   "fieldname": "follow_created_documents",
+   "fieldtype": "Check",
+   "label": "Auto follow documents that you create"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:(doc.document_follow_notify== 1)",
+   "fieldname": "follow_commented_documents",
+   "fieldtype": "Check",
+   "label": "Auto follow documents that you comment on"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:(doc.document_follow_notify== 1)",
+   "fieldname": "follow_liked_documents",
+   "fieldtype": "Check",
+   "label": "Auto follow documents that you Like"
+  },
+  {
+    "default": "0",
+    "depends_on": "eval:(doc.document_follow_notify== 1)",
+    "fieldname": "follow_shared_documents",
+    "fieldtype": "Check",
+    "label": "Auto follow documents that are shared with you"
+   },
+  {
+   "default": "0",
+   "depends_on": "eval:(doc.document_follow_notify== 1)",
+   "fieldname": "follow_assigned_documents",
+   "fieldtype": "Check",
+   "label": "Auto follow documents that are assigned to you"
   }
  ],
  "icon": "fa fa-user",
@@ -620,11 +678,6 @@
   {
    "group": "Profile",
    "link_doctype": "Contact",
-   "link_fieldname": "user"
-  },
-  {
-   "group": "Profile",
-   "link_doctype": "Chat Profile",
    "link_fieldname": "user"
   },
   {
@@ -670,7 +723,7 @@
   {
    "group": "Activity",
    "link_doctype": "ToDo",
-   "link_fieldname": "owner"
+   "link_fieldname": "allocated_to"
   },
   {
    "group": "Integrations",
@@ -678,8 +731,7 @@
    "link_fieldname": "user"
   }
  ],
- "max_attachments": 5,
- "modified": "2021-06-22 10:19:55.987351",
+ "modified": "2022-09-19 16:05:46.485242",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "User",
@@ -704,6 +756,10 @@
    "read": 1,
    "role": "System Manager",
    "write": 1
+  },
+  {
+   "role": "All",
+   "select": 1
   }
  ],
  "quick_entry": 1,
@@ -712,6 +768,7 @@
  "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "full_name",
  "track_changes": 1
 }

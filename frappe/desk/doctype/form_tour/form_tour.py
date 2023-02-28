@@ -1,32 +1,27 @@
 # Copyright (c) 2021, Frappe Technologies and contributors
-# For license information, please see license.txt
+# License: MIT. See LICENSE
 
 import frappe
 from frappe.model.document import Document
+from frappe.modules.export_file import export_to_files
+
 
 class FormTour(Document):
-	pass
+	def before_save(self):
+		meta = frappe.get_meta(self.reference_doctype)
+		for step in self.steps:
+			if step.is_table_field and step.parent_fieldname:
+				parent_field_df = meta.get_field(step.parent_fieldname)
+				step.child_doctype = parent_field_df.options
 
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
-def get_docfield_list(doctype, txt, searchfield, start, page_len, filters):
-	or_filters = [
-		['fieldname', 'like', '%' + txt + '%'],
-		['label', 'like', '%' + txt + '%'],
-		['fieldtype', 'like', '%' + txt + '%']
-	]
+				field_df = frappe.get_meta(step.child_doctype).get_field(step.fieldname)
+				step.label = field_df.label
+				step.fieldtype = field_df.fieldtype
+			else:
+				field_df = meta.get_field(step.fieldname)
+				step.label = field_df.label
+				step.fieldtype = field_df.fieldtype
 
-	parent_doctype = filters.pop('doctype')
-	excluded_fieldtypes = ['Column Break']
-	excluded_fieldtypes += filters.get('excluded_fieldtypes', [])
-
-	docfields = frappe.get_all(
-		doctype,
-		fields=["name as value", "label", "fieldtype"],
-		filters={'parent': parent_doctype, 'fieldtype': ['not in', excluded_fieldtypes]},
-		or_filters=or_filters,
-		limit_start=start,
-		limit_page_length=page_len,
-		as_list=1,
-	)
-	return docfields
+	def on_update(self):
+		if frappe.conf.developer_mode and self.is_standard:
+			export_to_files([["Form Tour", self.name]], self.module)

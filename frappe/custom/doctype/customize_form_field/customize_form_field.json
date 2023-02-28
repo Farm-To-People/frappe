@@ -7,6 +7,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "is_system_generated",
   "label_and_type",
   "label",
   "fieldtype",
@@ -14,11 +15,13 @@
   "non_negative",
   "reqd",
   "unique",
+  "is_virtual",
   "in_list_view",
   "in_standard_filter",
   "in_global_search",
   "in_preview",
   "bold",
+  "no_copy",
   "allow_in_quick_entry",
   "translatable",
   "column_break_7",
@@ -28,6 +31,7 @@
   "options",
   "fetch_from",
   "fetch_if_empty",
+  "show_dashboard",
   "permissions",
   "depends_on",
   "permlevel",
@@ -42,6 +46,7 @@
   "report_hide",
   "remember_last_selected_value",
   "hide_border",
+  "ignore_xss_filter",
   "property_depends_on_section",
   "mandatory_depends_on",
   "column_break_33",
@@ -82,7 +87,7 @@
    "label": "Type",
    "oldfieldname": "fieldtype",
    "oldfieldtype": "Select",
-   "options": "Attach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDuration\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nHTML Editor\nImage\nInt\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nRating\nRead Only\nSection Break\nSelect\nSignature\nSmall Text\nTable\nTable MultiSelect\nText\nText Editor\nTime",
+   "options": "Autocomplete\nAttach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDuration\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nHTML Editor\nIcon\nImage\nInt\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nPhone\nRating\nRead Only\nSection Break\nSelect\nSignature\nSmall Text\nTab Break\nTable\nTable MultiSelect\nText\nText Editor\nTime",
    "reqd": 1,
    "search_index": 1
   },
@@ -113,6 +118,12 @@
    "fieldname": "unique",
    "fieldtype": "Check",
    "label": "Unique"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_virtual",
+   "fieldtype": "Check",
+   "label": "Is Virtual"
   },
   {
    "default": "0",
@@ -201,6 +212,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:!in_list(['Section Break', 'Column Break', 'Tab Break'], doc.fieldtype)",
    "fieldname": "permlevel",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -422,18 +434,48 @@
    "fieldname": "non_negative",
    "fieldtype": "Check",
    "label": "Non Negative"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.fieldtype=='Tab Break'",
+   "fieldname": "show_dashboard",
+   "fieldtype": "Check",
+   "label": "Show Dashboard"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_copy",
+   "fieldtype": "Check",
+   "label": "No Copy"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_system_generated",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Is System Generated",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Don't encode HTML tags like &lt;script&gt; or just characters like &lt; or &gt;, as they could be intentionally used in this field",
+   "fieldname": "ignore_xss_filter",
+   "fieldtype": "Check",
+   "label": "Ignore XSS Filter"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-10-29 06:11:57.661039",
+ "modified": "2023-02-20 12:07:40.242470",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Customize Form Field",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",
- "sort_order": "ASC"
+ "sort_order": "ASC",
+ "states": []
 }

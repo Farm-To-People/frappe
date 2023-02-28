@@ -14,6 +14,7 @@
   "istable",
   "issingle",
   "is_tree",
+  "is_calendar_and_gantt",
   "editable_grid",
   "quick_entry",
   "cb01",
@@ -26,8 +27,10 @@
   "fields_section_break",
   "fields",
   "sb1",
+  "naming_rule",
   "autoname",
   "name_case",
+  "allow_rename",
   "column_break_15",
   "description",
   "documentation",
@@ -39,17 +42,21 @@
   "column_break_23",
   "hide_toolbar",
   "allow_copy",
-  "allow_rename",
   "allow_import",
   "allow_events_in_timeline",
   "allow_auto_repeat",
+  "make_attachments_public",
   "view_settings",
   "title_field",
+  "show_title_field_in_link",
+  "translated_doctype",
   "search_fields",
   "disable_printing",
   "default_print_format",
   "sort_field",
   "sort_order",
+  "default_view",
+  "force_re_route_to_default_view",
   "column_break_29",
   "document_type",
   "icon",
@@ -71,14 +78,18 @@
   "actions",
   "links_section",
   "links",
+  "document_states_section",
+  "states",
   "web_view",
   "has_web_view",
   "allow_guest_to_view",
   "index_web_pages_for_search",
   "route",
   "is_published_field",
+  "website_search_field",
   "advanced",
-  "engine"
+  "engine",
+  "migration_hash"
  ],
  "fields": [
   {
@@ -148,7 +159,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "1",
+   "default": "0",
    "depends_on": "eval:!doc.istable",
    "description": "If enabled, changes to the document are tracked and shown in timeline",
    "fieldname": "track_changes",
@@ -205,7 +216,7 @@
    "label": "Naming"
   },
   {
-   "description": "Naming Options:\n<ol><li><b>field:[fieldname]</b> - By Field</li><li><b>naming_series:</b> - By Naming Series (field called naming_series must be present</li><li><b>Prompt</b> - Prompt user for a name</li><li><b>[series]</b> - Series by prefix (separated by a dot); for example PRE.#####</li>\n<li><b>format:EXAMPLE-{MM}morewords{fieldname1}-{fieldname2}-{#####}</b> - Replace all braced words (fieldnames, date words (DD, MM, YY), series) with their value. Outside braces, any characters can be used.</li></ol>",
+   "description": "Naming Options:\n<ol><li><b>field:[fieldname]</b> - By Field</li><li><b>autoincrement</b> - Uses Databases' Auto Increment feature</li><li><b>naming_series:</b> - By Naming Series (field called naming_series must be present)</li><li><b>Prompt</b> - Prompt user for a name</li><li><b>[series]</b> - Series by prefix (separated by a dot); for example PRE.#####</li>\n<li><b>format:EXAMPLE-{MM}morewords{fieldname1}-{fieldname2}-{#####}</b> - Replace all braced words (fieldnames, date words (DD, MM, YY), series) with their value. Outside braces, any characters can be used.</li></ol>",
    "fieldname": "autoname",
    "fieldtype": "Data",
    "label": "Auto Name",
@@ -213,6 +224,7 @@
    "oldfieldtype": "Data"
   },
   {
+   "depends_on": "eval:doc.naming_rule !== \"Autoincrement\"",
    "fieldname": "name_case",
    "fieldtype": "Select",
    "label": "Name Case",
@@ -278,7 +290,8 @@
    "oldfieldtype": "Check"
   },
   {
-   "default": "0",
+   "default": "1",
+   "depends_on": "eval:doc.naming_rule !== \"Autoincrement\"",
    "fieldname": "allow_rename",
    "fieldtype": "Check",
    "label": "Allow Rename",
@@ -314,7 +327,8 @@
    "description": "This value will appear below `name` in drop-down lists.\nIt <b>also</b> replaces 'name' as the left-most column on List Grids.",
    "fieldname": "title_field",
    "fieldtype": "Data",
-   "label": "Title Field"
+   "label": "Title Field",
+   "mandatory_depends_on": "eval:doc.show_title_field_in_link"
   },
   {
    "depends_on": "eval:!doc.istable",
@@ -558,10 +572,77 @@
    "fieldname": "disable_printing",
    "fieldtype": "Check",
    "label": "Disable Printing"
+  },
+  {
+   "depends_on": "has_web_view",
+   "fieldname": "website_search_field",
+   "fieldtype": "Data",
+   "label": "Website Search Field"
+  },
+  {
+   "fieldname": "naming_rule",
+   "fieldtype": "Select",
+   "label": "Naming Rule",
+   "length": 40,
+   "options": "\nSet by user\nAutoincrement\nBy fieldname\nBy \"Naming Series\" field\nExpression\nExpression (old style)\nRandom\nBy script"
+  },
+  {
+   "fieldname": "migration_hash",
+   "fieldtype": "Data",
+   "hidden": 1
+  },
+  {
+   "fieldname": "states",
+   "fieldtype": "Table",
+   "label": "States",
+   "options": "DocType State"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "document_states_section",
+   "fieldtype": "Section Break",
+   "label": "Document States"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_title_field_in_link",
+   "fieldtype": "Check",
+   "label": "Show Title in Link Fields"
+  },
+  {
+   "default": "0",
+   "fieldname": "translated_doctype",
+   "fieldtype": "Check",
+   "label": "Translate Link Fields"
+  },
+  {
+   "default": "0",
+   "fieldname": "make_attachments_public",
+   "fieldtype": "Check",
+   "label": "Make Attachments Public by Default"
+  },
+  {
+   "fieldname": "default_view",
+   "fieldtype": "Select",
+   "label": "Default View"
+  },
+  {
+   "default": "0",
+   "fieldname": "force_re_route_to_default_view",
+   "fieldtype": "Check",
+   "label": "Force Re-route to Default View"
+  },
+  {
+   "default": "0",
+   "description": "Enables Calendar and Gantt views.",
+   "fieldname": "is_calendar_and_gantt",
+   "fieldtype": "Check",
+   "label": "Is Calendar and Gantt"
   }
  ],
  "icon": "fa fa-bolt",
  "idx": 6,
+ "index_web_pages_for_search": 1,
  "links": [
   {
    "group": "Views",
@@ -639,10 +720,11 @@
    "link_fieldname": "reference_doctype"
   }
  ],
- "modified": "2022-11-22 19:13:06.508487",
+ "modified": "2023-04-26 19:13:06.508487",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocType",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -672,5 +754,7 @@
  "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "track_changes": 1
+ "states": [],
+ "track_changes": 1,
+ "translated_doctype": 1
 }

@@ -36,6 +36,10 @@
 			top: 5px;
 			right: 10px;
 		}
+
+		.help {
+			display: none;
+		}
 	}
 
 	.dt-header {
@@ -58,7 +62,7 @@
 	}
 
 	.link-btn {
-		top: 6px;
+		top: 0px;
 	}
 
 	select {
@@ -67,6 +71,10 @@
 
 	.checkbox {
 		margin: 7px 0 7px 8px;
+
+		.label-area {
+			display: none;
+		}
 	}
 
 	[data-fieldtype="Color"] .control-input {
@@ -77,7 +85,7 @@
 		padding: 0;
 		border: var(--dt-focus-border-width) solid #9bccf8;
 
-		input {
+		input[type="text"] {
 			font-size: inherit;
 			height: 27px;
 
@@ -85,6 +93,11 @@
 				box-shadow: none;
 			}
 		}
+	}
+
+	.dt-cell__resize-handle {
+		right: -3px !important;
+		left: unset !important;
 	}
 
 	.dt-row.dt-row-totalRow {

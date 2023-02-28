@@ -1,6 +1,8 @@
 .web-footer {
-	padding: 5rem 0;
+	padding: 3rem 0;
 	min-height: 140px;
+	background-color: var(--fg-color);
+	border-top: 1px solid $border-color;
 }
 
 .footer-logo {
@@ -76,8 +78,6 @@
 }
 
 .footer-info {
-	margin-top: 1rem;
-	border-top: 1px solid $border-color;
 	color: $text-muted;
 	font-size: $font-size-sm;
 }
@@ -85,4 +85,17 @@
 .form-control {
 	border: none;
 	font-size: var(--text-md);
+}
+
+.footer-logo-extension {
+	.input-group {
+		justify-content: flex-end;
+		#footer-subscribe-email, #footer-subscribe-button {
+			max-width: 300px;
+			border: 1px solid var(--dark-border-color);
+			box-shadow: none;
+			border-radius: var(--border-radius);
+			font-size: $font-size-sm;
+		}
+	}
 }

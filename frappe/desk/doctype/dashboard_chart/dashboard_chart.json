@@ -17,6 +17,7 @@
   "y_axis",
   "source",
   "document_type",
+  "parent_document_type",
   "based_on",
   "value_based_on",
   "group_by_type",
@@ -41,7 +42,8 @@
   "column_break_2",
   "color",
   "section_break_10",
-  "last_synced_on"
+  "last_synced_on",
+  "roles"
  ],
  "fields": [
   {
@@ -268,13 +270,28 @@
    "fieldname": "use_report_chart",
    "fieldtype": "Check",
    "label": "Use Report Chart"
+  },
+  {
+   "depends_on": "eval: doc.chart_type !== 'Custom' && doc.chart_type !== 'Report'",
+   "description": "The document type selected is a child table, so the parent document type is required.",
+   "fieldname": "parent_document_type",
+   "fieldtype": "Link",
+   "label": "Parent Document Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "roles",
+   "fieldtype": "Table",
+   "label": "Roles",
+   "options": "Has Role"
   }
  ],
  "links": [],
- "modified": "2020-07-23 11:10:33.509497",
+ "modified": "2022-07-27 11:09:09.203236",
  "modified_by": "Administrator",
  "module": "Desk",
  "name": "Dashboard Chart",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -314,5 +331,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

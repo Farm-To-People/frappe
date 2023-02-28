@@ -24,7 +24,8 @@
   "unsubscribe_method",
   "expose_recipients",
   "attachments",
-  "retry"
+  "retry",
+  "email_account"
  ],
  "fields": [
   {
@@ -82,7 +83,8 @@
    "fieldname": "reference_name",
    "fieldtype": "Data",
    "label": "Reference DocName",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "communication",
@@ -139,16 +141,23 @@
    "fieldtype": "Int",
    "label": "Retry",
    "read_only": 1
+  },
+  {
+   "fieldname": "email_account",
+   "fieldtype": "Link",
+   "label": "Email Account",
+   "options": "Email Account"
   }
  ],
  "icon": "fa fa-envelope",
  "idx": 1,
  "in_create": 1,
  "links": [],
- "modified": "2020-07-17 15:58:15.369419",
+ "modified": "2022-07-12 15:17:37.934316",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Queue",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
@@ -162,5 +171,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
