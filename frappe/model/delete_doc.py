@@ -173,15 +173,11 @@ def update_naming_series(doc):
 			revert_series_if_last(doc.meta.autoname, doc.name, doc)
 
 def delete_from_table(doctype, name, ignore_doctypes, doc):
-	if doctype!="DocType" and doctype==name:
-		frappe.db.sql("delete from `tabSingles` where `doctype`=%s", name)
-	else:
-		frappe.db.sql("delete from `tab{0}` where `name`=%s".format(doctype), name)
-
-	if DH_DEBUG_DELETE:
-		print(f"SQL DELETE ({doctype} : {name})")
-
-	# get child tables
+	"""
+	Datahenge: I want to use SQL foreign keys.  In particular, from a Child document to Parent document.
+	           So this function needs to be reorganized.  So that Child Documents are deleted *first*.
+	"""
+	# Get Child Tables
 	if doc:
 		tables = [d.options for d in doc.meta.get_table_fields()]
 
@@ -203,10 +199,17 @@ def delete_from_table(doctype, name, ignore_doctypes, doc):
 		if not frappe.flags.in_install=="frappe":
 			tables += get_table_fields("Custom Field")
 
-	# delete from child tables
+	# Delete from child tables
 	for t in list(set(tables)):
 		if t not in ignore_doctypes:
-			frappe.db.sql("delete from `tab%s` where parenttype=%s and parent = %s" % (t, '%s', '%s'), (doctype, name))
+			frappe.db.sql("DELETE FROM `tab%s` where parenttype=%s and parent = %s" % (t, '%s', '%s'), (doctype, name))
+
+	# Perform a SQL delete of the Document.
+	if doctype != "DocType" and doctype==name:
+		frappe.db.sql("DELETE FROM `tabSingles` WHERE `doctype`=%s", name)
+	else:
+		frappe.db.sql("DELETE FROM `tab{0}` WHERE `name`=%s".format(doctype), name)
+
 
 def update_flags(doc, flags=None, ignore_permissions=False):
 	if ignore_permissions:
