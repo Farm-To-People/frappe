@@ -141,6 +141,10 @@ def update_property_setters(doctype, old_fieldname, new_fieldname):
 
 
 def update_user_settings(doctype, old_fieldname, new_fieldname):
+
+	if doctype in ("Deleted Document"):  # Datahenge: Not for these DocTypes
+		return
+
 	# store the user settings data from the redis to db
 	sync_user_settings()
 
