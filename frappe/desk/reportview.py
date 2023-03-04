@@ -412,8 +412,6 @@ def handle_duration_fieldtype_values(doctype, data, fields):
 @frappe.whitelist()
 def delete_items():
 	"""delete selected items"""
-	import json
-
 	items = sorted(json.loads(frappe.form_dict.get('items')), reverse=True)
 	doctype = frappe.form_dict.get('doctype')
 
@@ -448,7 +446,10 @@ def get_sidebar_stats(stats, doctype, filters=[]):
 @frappe.read_only()
 def get_stats(stats, doctype, filters=[]):
 	"""get tag info"""
-	import json
+
+	if doctype in ['Deleted Document']:
+		return # Not wasting system performance for certain DocTypes.
+
 	tags = json.loads(stats)
 	if filters:
 		filters = json.loads(filters)
