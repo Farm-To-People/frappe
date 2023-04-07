@@ -219,8 +219,11 @@ frappe.msgprint = function(msg, title, is_minimizable) {
 		data.message = '';
 	}
 
-	if(data.message.search(/<br>|<p>|<li>/)==-1) {
-		msg = frappe.utils.replace_newlines(data.message);
+	/* Datahenge: Only if string, add some newlines to the HTML. */
+	if (typeof data.message === "string") {
+		if(data.message.search(/<br>|<p>|<li>/)==-1) {
+ 			msg = frappe.utils.replace_newlines(data.message);
+		}
 	}
 
 	var msg_exists = false;

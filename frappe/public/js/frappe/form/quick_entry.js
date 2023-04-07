@@ -97,9 +97,24 @@ frappe.ui.form.QuickEntryForm = Class.extend({
 	},
 
 	validate_for_prompt_autoname: function() {
+		// Datahenge: This cleanly removes the __newname field.
 		if(this.meta.autoname && this.meta.autoname.toLowerCase()==='prompt') {
-			this.mandatory = [{fieldname:'__newname', label:__('{0} Name', [this.meta.name]),
-				reqd: 1, fieldtype:'Data'}].concat(this.mandatory);
+			this.mandatory = [
+				{
+					fieldname:'__newname',
+					label:__('{0} Name',
+					[this.meta.name]),
+					reqd: 1,
+					fieldtype:'Data'
+				}
+			].concat(this.mandatory);
+		}
+		else {
+			// Datahenge: Get rid of the new __newname field:
+			console.log("Removing unnecessary '__newname' field ...");
+			this.mandatory = this.mandatory.filter(function( obj ) {
+				return obj.fieldname !== '__newname';
+			});
 		}
 	},
 

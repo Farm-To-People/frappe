@@ -173,15 +173,11 @@ def update_naming_series(doc):
 			revert_series_if_last(doc.meta.autoname, doc.name, doc)
 
 def delete_from_table(doctype, name, ignore_doctypes, doc):
-	if doctype!="DocType" and doctype==name:
-		frappe.db.sql("delete from `tabSingles` where `doctype`=%s", name)
-	else:
-		frappe.db.sql("delete from `tab{0}` where `name`=%s".format(doctype), name)
-
-	if DH_DEBUG_DELETE:
-		print(f"SQL DELETE ({doctype} : {name})")
-
-	# get child tables
+	"""
+	Datahenge: I want to use SQL foreign keys.  In particular, from a Child document to Parent document.
+	           So this function needs to be reorganized.  So that Child Documents are deleted *first*.
+	"""
+	# Get Child Tables
 	if doc:
 		tables = [d.options for d in doc.meta.get_table_fields()]
 
@@ -203,10 +199,17 @@ def delete_from_table(doctype, name, ignore_doctypes, doc):
 		if not frappe.flags.in_install=="frappe":
 			tables += get_table_fields("Custom Field")
 
-	# delete from child tables
+	# Delete from child tables
 	for t in list(set(tables)):
 		if t not in ignore_doctypes:
-			frappe.db.sql("delete from `tab%s` where parenttype=%s and parent = %s" % (t, '%s', '%s'), (doctype, name))
+			frappe.db.sql("DELETE FROM `tab%s` where parenttype=%s and parent = %s" % (t, '%s', '%s'), (doctype, name))
+
+	# Perform a SQL delete of the Document.
+	if doctype != "DocType" and doctype==name:
+		frappe.db.sql("DELETE FROM `tabSingles` WHERE `doctype`=%s", name)
+	else:
+		frappe.db.sql("DELETE FROM `tab{0}` WHERE `name`=%s".format(doctype), name)
+
 
 def update_flags(doc, flags=None, ignore_permissions=False):
 	if ignore_permissions:
@@ -236,6 +239,7 @@ def check_if_doc_is_linked(doc, method="Delete"):
 		Raises exception if the given doc(dt, dn) is linked in another record.
 	"""
 	# TODO: Datahenge: Would be nice to introduce a "cascade" feature here, where Links are deleted when their parent is deleted.
+	# NOTE: For Daily Order Lines, important an index exists for `ref_parent_item`
 	from frappe.model.rename_doc import get_link_fields
 	link_fields = get_link_fields(doc.doctype)
 	link_fields = [[lf['parent'], lf['fieldname'], lf['issingle']] for lf in link_fields]
@@ -276,16 +280,17 @@ def check_if_doc_is_linked(doc, method="Delete"):
 				raise_link_exists_exception(doc, link_dt, link_dt)
 
 def check_if_doc_is_dynamically_linked(doc, method="Delete"):
-	'''Raise `frappe.LinkExistsError` if the document is dynamically linked'''
+	"""
+	Raise `frappe.LinkExistsError` if the document is dynamically linked
+	"""
 	for df in get_dynamic_link_map().get(doc.doctype, []):
-
-		ignore_linked_doctypes = doc.get('ignore_linked_doctypes') or []
 
 		# Datahenge: Need a way to ignore linked doctypes, no matter what, even if method <> 'Cancel'
 		if df.parent in doc.flags.get('dh_ignore_linked_doctypes', []):
 			continue
 		# Datahenge: End
 
+		ignore_linked_doctypes = doc.get('ignore_linked_doctypes') or []
 		if df.parent in doctypes_to_skip or (df.parent in ignore_linked_doctypes and method == 'Cancel'):
 			# don't check for communication and todo!
 			continue

@@ -14,6 +14,7 @@ Read the documentation: https://frappeframework.com/docs
 # pylint: disable=assigning-non-slot,invalid-name,redefined-outer-name, wrong-import-position
 
 import os
+import pathlib
 import warnings
 from enum import Enum  # Datahenge: Attempt at a more-flexible print function
 _dev_server = os.environ.get('DEV_SERVER', False)
@@ -252,6 +253,8 @@ def get_site_config(sites_path=None, site_path=None):
 	site_path = site_path or getattr(local, "site_path", None)
 
 	if sites_path:
+		# sites_path = pathlib.Path(sites_path).absolute()
+		# print(f"Sites Path: {sites_path}")
 		common_site_config = os.path.join(sites_path, "common_site_config.json")
 		if os.path.exists(common_site_config):
 			try:
@@ -269,6 +272,8 @@ def get_site_config(sites_path=None, site_path=None):
 				click.secho("{0}/site_config.json is invalid".format(local.site), fg="red")
 				print(error)
 		elif local.site and not local.flags.new_site:
+			site_path = pathlib.Path(site_path).absolute()
+			print(f"Error: Cannot find this path: {site_path}")
 			raise IncorrectSitePath("{0} does not exist".format(local.site))
 
 	return _dict(config)

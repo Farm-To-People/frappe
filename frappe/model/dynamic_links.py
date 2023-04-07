@@ -26,30 +26,35 @@ dynamic_link_queries =  [
 	order by `tabDocType`.read_only, `tabDocType`.in_create""",
 ]
 
-def get_dynamic_link_map(for_delete=False):
-	'''Build a map of all dynamically linked tables. For example,
+def get_dynamic_link_map():
+	"""
+	Build a map of all dynamically linked tables. For example,
 		if Note is dynamically linked to ToDo, the function will return
 		`{"Note": ["ToDo"], "Sales Invoice": ["Journal Entry Detail"]}`
 
 	Note: Will not map single doctypes
-	'''
-	if getattr(frappe.local, 'dynamic_link_map', None)==None or frappe.flags.in_test:
+	"""
+	# NOTE: Datahenge - When not "cached" in frappe.local, this can be an expensive function.
+	# NOTE: Need to ensure that "Link" DocFields always have their own SQL index.
+	if getattr(frappe.local, 'dynamic_link_map', None) is None or frappe.flags.in_test:
 		# Build from scratch
 		dynamic_link_map = {}
-		for df in get_dynamic_links():
+		dynamic_links = get_dynamic_links()
+		print(f"get_dynamic_link_map() looping through {len(dynamic_links)} links.  One SQL query required per link.")
+		for df in dynamic_links:
 			meta = frappe.get_meta(df.parent)
 			if meta.issingle:
 				# always check in Single DocTypes
 				dynamic_link_map.setdefault(meta.name, []).append(df)
 			else:
 				try:
-					links = frappe.db.sql_list("""select distinct {options} from `tab{parent}`""".format(**df))
+					links = frappe.db.sql_list("""SELECT DISTINCT {options} FROM `tab{parent}`""".format(**df), debug=False)
 					for doctype in links:
 						dynamic_link_map.setdefault(doctype, []).append(df)
 				except frappe.db.TableMissingError: # noqa: E722
 					pass
 
-		frappe.local.dynamic_link_map = dynamic_link_map
+		frappe.local.dynamic_link_map = dynamic_link_map  # pylint: disable=assigning-non-slot
 	return frappe.local.dynamic_link_map
 
 def get_dynamic_links():
