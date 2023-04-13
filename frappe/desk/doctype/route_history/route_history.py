@@ -9,8 +9,19 @@ from frappe.model.document import Document
 class RouteHistory(Document):
 	pass
 
+def on_doctype_update():
+	"""
+	Create additional indexes and constraints
+	"""
+	frappe.db.add_index("Route History", ["user", "route"], index_name="user_route_idx")
+
+
 def flush_old_route_records():
-	"""Deletes all route records except last 500 records per user"""
+	"""
+	Deletes all route records except last 500 records per user
+	"""
+
+	# Datahenge: If you're going to do something like this, create an index (see 'on_doctype_update()' above)
 
 	records_to_keep_limit = 500
 	users = frappe.db.sql('''

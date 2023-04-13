@@ -264,8 +264,6 @@ def get_site_config(sites_path=None, site_path=None):
 				print(error)
 
 	if site_path:
-		# site_path = pathlib.Path(site_path).absolute()
-		# print(f"Site Path: {site_path}")
 		site_config = os.path.join(site_path, "site_config.json")
 		if os.path.exists(site_config):
 			try:
@@ -274,6 +272,8 @@ def get_site_config(sites_path=None, site_path=None):
 				click.secho("{0}/site_config.json is invalid".format(local.site), fg="red")
 				print(error)
 		elif local.site and not local.flags.new_site:
+			site_path = pathlib.Path(site_path).absolute()
+			print(f"Error: Cannot find this path: {site_path}")
 			raise IncorrectSitePath("{0} does not exist".format(local.site))
 
 	return _dict(config)
