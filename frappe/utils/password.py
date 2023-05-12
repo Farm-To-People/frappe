@@ -54,7 +54,7 @@ def get_decrypted_password(doctype, name, fieldname='password', raise_exception=
 	elif raise_exception:
 		# Datahenge: ABSOLUTELY NOT.  The frappe.AuthenticationError destroys the session's login.
 		# frappe.throw(_('Password not found'), frappe.AuthenticationError)
-		raise Exception(f"Unable to find password in Auth for DocType '{doctype}', name '{name}'")
+		raise RuntimeError(f"get_decrypted_password() : Unable to find password in Auth for DocType '{doctype}', name '{name}'")
 
 
 def set_encrypted_password(doctype, name, pwd, fieldname='password'):
