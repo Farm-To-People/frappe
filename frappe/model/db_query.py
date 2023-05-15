@@ -250,8 +250,8 @@ class DatabaseQuery(object):
 			'connection_id', 'current_user', 'database', 'last_insert_id', 'session_user',
 			'system_user', 'user', 'version', 'global']
 
-		def _raise_exception():
-			frappe.throw(_('Use of sub-query or function is restricted'), frappe.DataError)
+		def _raise_exception(reason=None):
+			frappe.throw(_(f"Use of sub-query or function is restricted: {reason})"), frappe.DataError)
 
 		def _is_query(field):
 			if re.compile(r"^(select|delete|update|drop|create)\s").match(field):
@@ -263,17 +263,17 @@ class DatabaseQuery(object):
 		for field in self.fields:
 			if sub_query_regex.match(field):
 				if any(keyword in field.lower().split() for keyword in blacklisted_keywords):
-					_raise_exception()
+					_raise_exception(f"keyword found in blacklisted_keywords: {blacklisted_keywords}")
 
 				if any("({0}".format(keyword) in field.lower() for keyword in blacklisted_keywords):
-					_raise_exception()
+					_raise_exception(f"keyword found in blacklisted_keywords: {blacklisted_keywords}")
 
 				if any("{0}(".format(keyword) in field.lower() for keyword in blacklisted_functions):
-					_raise_exception()
+					_raise_exception(f"keyword found in blacklisted_keywords: {blacklisted_keywords}")
 
 				if '@' in field.lower():
 					# prevent access to global variables
-					_raise_exception()
+					_raise_exception("@ symbol")
 
 			if re.compile(r"[0-9a-zA-Z]+\s*'").match(field):
 				_raise_exception()

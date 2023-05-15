@@ -51,7 +51,7 @@ frappe.assets = {
 				localStorage.removeItem(key);
 			}
 		}
-		console.log("localStorage cleared");
+		// console.log("localStorage cleared");
 	},
 
 
