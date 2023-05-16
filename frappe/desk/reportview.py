@@ -26,6 +26,7 @@ def get():
 		It's throwing Permission errors for a few DocTypes, when Guest:
 			BTU Task Log
 			Web Subscription Cadence
+			Auth User
 
 		Not sure why it's attempting this; Guests cannot view those DocTypes.
 	"""
@@ -33,7 +34,7 @@ def get():
 
 	# Datahenge Bug Fix:
 	if frappe.session.user == 'Guest':
-		if args.doctype in ('BTU Task Log', 'Web Subscription Cadence'):
+		if args.doctype in ('BTU Task Log', 'Web Subscription Cadence', 'Auth User'):
 			# Don't waste time trying to query DocTypes you're not allowed to query:
 			return None
 
