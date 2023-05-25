@@ -1550,6 +1550,65 @@ class Document(BaseDocument):
 	# VALIDATION
 	# --------
 
+	def determine_save_scenarios(self, child_docfield_name):
+
+		current_child_records = self.get(child_docfield_name)
+		doc_orig = self.get_doc_before_save()
+
+		result = {
+			"is_parent_new": None,
+			"parent_action": "Create",
+			"children": []
+		}
+
+		if not doc_orig:
+			# Scenario 1 : New Parent, No Children
+			if not current_child_records:
+				result["is_parent_new"] = True
+				result["parent_action"] = "Create"
+				return result
+			# Scenario 2: New Parent, New Children
+			result["is_parent_new"] = True
+			result["parent_action"] = "Create"
+			for each_child in current_child_records:
+				result["children"].append( {"name": each_child.name, "action": "Create"})
+			return result
+
+		result["is_parent_new"] = False
+		result["parent_action"] = "Update"
+
+		original_child_records = doc_orig.get(child_docfield_name)
+		if (not original_child_records) and (not current_child_records):
+			return result
+
+		child_docs_deleted = [ child_orig for child_orig in original_child_records
+		                       if child_orig.name not in [ child.name for child in current_child_records]
+		]
+
+		if child_docs_deleted:
+			# Scenario 4: Some child docs were deleted.
+			for each_child in child_docs_deleted:
+				result["children"].append( {"name": each_child.name, "action": "Delete"})
+
+
+		# Loop through all the new/current children:
+		for each_child in current_child_records:
+
+			if each_child.name not in [ child_orig.name for child_orig in original_child_records]:
+				# Scenario 5: Some child documents were Inserted.
+				result["children"].append( {"name": each_child.name, "action": "Create"})
+				continue  # Move to next child record.
+
+			# At this point in code, we know Child record existed before & after.  So compare them.
+			child_orig = next(iter([ child_orig for child_orig in original_child_records if child_orig.name == each_child.name ]))
+
+			if _exist_significant_differences(child_orig, each_child):
+				result["children"].append( {"name": each_child.name, "action": "Update"})
+			else:
+				result["children"].append( {"name": each_child.name, "action": None })
+
+		return result
+
 	def before_validate_children(self, child_docfield_name):
 		"""
 		Run the 'before_validate' code on all Child Documents.
@@ -1577,14 +1636,30 @@ class Document(BaseDocument):
 
 	def before_save_children(self, child_docfield_name, **kwargs):
 		"""
-		Datahenge: A controller function for validating Child Doctypes.
+		Datahenge:
+		  * Analyzes what is happeneing to Parent and Children (CRUD)
+		  * Calls either children 'before_save' or 'on_trash', depending on the results.
 		"""
 		if not isinstance(child_docfield_name, str):
 			raise ValueError("Argument 'child_docfield_name' should be a String.")
 
-		for child_doc in self.get(child_docfield_name):
-			if hasattr(child_doc, 'before_save'):
-				child_doc.before_save(_parent_doc=self, **kwargs)
+		current_children = self.get(child_docfield_name)
+		doc_orig = self.get_doc_before_save()
+		if doc_orig:
+			original_children = doc_orig.get(child_docfield_name)
+		else:
+			original_children = []
+
+		save_scenarios = self.determine_save_scenarios(child_docfield_name)
+		for each_child_scenario in save_scenarios["children"]:
+			if each_child_scenario["action"] in ["Create", "Update"]:
+				child_doc = [ each for each in current_children if each.name == each_child_scenario["name"]][0]
+				if hasattr(child_doc, 'before_save'):
+					child_doc.before_save(_parent_doc=self, **kwargs)
+			elif each_child_scenario["action"] in ["Delete"]:
+				child_doc = [ each for each in original_children if each.name == each_child_scenario["name"]][0]
+				if hasattr(child_doc, "on_trash"):
+					child_doc.on_trash(_parent_doc=self, **kwargs)
 
 	# --------
 	# DELETION
@@ -1620,6 +1695,8 @@ class Document(BaseDocument):
 		This function analyzes a Parent's child records, and based on CRUD, intelligently calls Child DocType controllers.
 		"""
 		dprint(f"\nEntering 'on_update_children' for DocType '{self.doctype}', Child '{child_docfield_name}'...", debug)
+
+		# TODO: Incorporate new method 'determine_save_scenarios'
 
 		current_child_records = self.get(child_docfield_name)
 		doc_orig = self.get_doc_before_save()
