@@ -224,6 +224,9 @@ class BaseDocument(object):
 			raise ValueError
 
 	def remove(self, doc):
+		"""
+		Used to remove a Child document from its parent.
+		"""
 		self.get(doc.parentfield).remove(doc)
 
 	def _init_child(self, value, key):
