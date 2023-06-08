@@ -54,7 +54,9 @@
   "enable_two_factor_auth",
   "bypass_2fa_for_retricted_ip_users",
   "bypass_restrict_ip_check_if_2fa_enabled",
+  "column_break_50",
   "two_factor_method",
+  "enqueue_otp_email",
   "lifespan_qrcode_image",
   "otp_issuer_name",
   "email",
@@ -469,12 +471,24 @@
    "fieldname": "strip_exif_metadata_from_uploaded_images",
    "fieldtype": "Check",
    "label": "Strip EXIF tags from uploaded images"
+  },
+  {
+   "fieldname": "column_break_50",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.enable_two_factor_auth == true && doc.two_factor_method == \"Email\"",
+   "description": "If marked, emails containing OTP are placed in the 'short' queue for processing. Otherwise, emails are transmitted immediately.",
+   "fieldname": "enqueue_otp_email",
+   "fieldtype": "Check",
+   "label": "Enqueue OTP Email"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
- "modified": "2021-03-30 11:47:47.330437",
+ "modified": "2023-06-08 17:59:00.722022",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",

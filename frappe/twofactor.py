@@ -319,8 +319,12 @@ def send_token_via_email(user, token, otp_secret, otp_issuer, subject=None, mess
 		'retry':3
 	}
 
-	enqueue(method=frappe.sendmail, queue='short', timeout=300, event=None,
-		is_async=True, job_name=None, now=False, **email_args)
+	# Datahenge: Use the System Settings to decide whether OTP emails are enqueued, or sent immediately by the Web Server.
+	if bool(frappe.db.get_single_value("System Settings", "enqueue_otp_email")):
+		enqueue(method=frappe.sendmail, queue='short', timeout=300, event=None,
+			is_async=True, job_name=None, now=False, **email_args)
+	else:
+		frappe.sendmail(**email_args)
 	return True
 
 def get_qr_svg_code(totp_uri):
