@@ -319,8 +319,11 @@ def send_token_via_email(user, token, otp_secret, otp_issuer, subject=None, mess
 		'retry':3
 	}
 
-	enqueue(method=frappe.sendmail, queue='short', timeout=300, event=None,
-		is_async=True, job_name=None, now=False, **email_args)
+	if frappe.get_single_value("System Settings", "enqueue_otp_email") is True:
+		enqueue(method=frappe.sendmail, queue='short', timeout=300, event=None,
+			is_async=True, job_name=None, now=False, **email_args)
+	else:
+		frappe.sendmail(**email_args)
 	return True
 
 def get_qr_svg_code(totp_uri):
