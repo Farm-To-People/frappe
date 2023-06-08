@@ -478,6 +478,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.enable_two_factor_auth == true && doc.two_factor_method == \"Email\"",
    "description": "If marked, emails containing OTP are placed in the 'short' queue for processing. Otherwise, emails are transmitted immediately.",
    "fieldname": "enqueue_otp_email",
    "fieldtype": "Check",
@@ -487,7 +488,7 @@
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
- "modified": "2023-06-08 17:38:08.220000",
+ "modified": "2023-06-08 17:59:00.722022",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "System Settings",
