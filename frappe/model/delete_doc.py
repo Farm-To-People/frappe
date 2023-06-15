@@ -29,7 +29,8 @@ def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reloa
 	"""
 		Deletes a doc(dt, dn) and validates if it is not submitted and not linked in a live record
 	"""
-	if not ignore_doctypes: ignore_doctypes = []
+	if not ignore_doctypes:
+		ignore_doctypes = []
 
 	# get from form
 	if not doctype:
@@ -283,6 +284,9 @@ def check_if_doc_is_dynamically_linked(doc, method="Delete"):
 	"""
 	Raise `frappe.LinkExistsError` if the document is dynamically linked
 	"""
+
+	# TODO: Datahenge: The call to get_dynamic_link_map() is taking 3-4 seconds, every time.  Need to put an end to this bullshit.
+
 	for df in get_dynamic_link_map().get(doc.doctype, []):
 
 		# Datahenge: Need a way to ignore linked doctypes, no matter what, even if method <> 'Cancel'
