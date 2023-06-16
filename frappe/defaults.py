@@ -192,6 +192,8 @@ def clear_default(key=None, value=None, parent=None, name=None, parenttype=None)
 	frappe.db.sql("""delete from tabDefaultValue where {0}""".format(" and ".join(conditions)),
 		tuple(values))
 
+	if not parent:
+		frappe.whatis(f"WARNING: Global Cache is being destroyed by defaults.clear_default()")
 	_clear_cache(parent)
 
 def get_defaults_for(parent="__default"):
