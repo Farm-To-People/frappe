@@ -26,21 +26,35 @@ dynamic_link_queries =  [
 	order by `tabDocType`.read_only, `tabDocType`.in_create""",
 ]
 
-def get_dynamic_link_map():
+def get_dynamic_link_map() -> dict:
 	"""
 	Build a map of all dynamically linked tables. For example,
 		if Note is dynamically linked to ToDo, the function will return
 		`{"Note": ["ToDo"], "Sales Invoice": ["Journal Entry Detail"]}`
 
 	Note: Will not map single doctypes
+
+	CLI: bench execute frappe.model.dynamic_links.get_dynamic_link_map
 	"""
-	# NOTE: Datahenge - When not "cached" in frappe.local, this can be an expensive function.
-	# NOTE: Need to ensure that "Link" DocFields always have their own SQL index.
+
+	# Datahenge: Try to fetch from Redis cache first, instead of doing loops and SQL.
+	coded_result = frappe.cache().hgetall("dh_dynamic_link_map")
+	if coded_result:
+		# print(f"Number of keys in decoded_result = {len(coded_result.keys())}")
+		result = {}
+		for key, data in sorted(coded_result.items()):
+			result[key.decode()] = data  # need to decode the binary Keys into Strings
+		return result
+
+	# Datahenge: Otherwise, do the usual Frappe Framework methods.
+	# NOTE: You'll want to ensure that "Link" DocFields always have their own SQL index.
+
 	if getattr(frappe.local, 'dynamic_link_map', None) is None or frappe.flags.in_test:
 		# Build from scratch
+		print("NOTE: Building a 'dynamic_link_map' map from scratch via loops and SQL queries...")
 		dynamic_link_map = {}
 		dynamic_links = get_dynamic_links()
-		print(f"get_dynamic_link_map() looping through {len(dynamic_links)} links.  One SQL query required per link.")
+		# print(f"get_dynamic_link_map() looping through {len(dynamic_links)} links.  One SQL query required per link.")
 		for df in dynamic_links:
 			meta = frappe.get_meta(df.parent)
 			if meta.issingle:
@@ -55,6 +69,12 @@ def get_dynamic_link_map():
 					pass
 
 		frappe.local.dynamic_link_map = dynamic_link_map  # pylint: disable=assigning-non-slot
+
+	# Datahenge : Now that we have this, write to Redis, so all subsequent calls are very fast.
+	print("NOTE: Writing the 'dynamic_link_map' to local Redis cache...")
+	for key, value in dynamic_link_map.items():
+		frappe.cache().hset("dh_dynamic_link_map", key, value)
+
 	return frappe.local.dynamic_link_map
 
 def get_dynamic_links():

@@ -11,7 +11,7 @@ import time
 # Datahenge
 # import dictdiffer  # A library for finding the difference between 2 Python dictionaries.
 from six import iteritems, string_types
-from werkzeug.exceptions import NotFound, Forbidden
+from werkzeug.exceptions import NotFound
 
 import frappe
 from frappe import _, msgprint, is_whitelisted
@@ -175,7 +175,7 @@ class Document(BaseDocument):
 			df = next(iter([ table_field for table_field in self.meta.get_table_fields()
 			                 if table_field.fieldname == docfield_fieldname]))
 		except StopIteration:
-			raise Exception(f"DocType '{self.name}' does not have a Table field named '{docfield_fieldname}'")
+			raise ValueError(f"DocType '{self.name}' does not have a Table field named '{docfield_fieldname}'")
 
 		children = frappe.db.get_values(df.options,
 			{"parent": self.name, "parenttype": self.doctype, "parentfield": df.fieldname},
@@ -1802,9 +1802,8 @@ class Document(BaseDocument):
 		Return a copy of the original Child Document, prior to changes.
 		* Custom function by Datahenge
 		"""
-		# from ftp.ftp_module.generics import caller_is_proxy  # deliberate late import (cross-module function)
 		if not self.is_child_doctype():
-			raise Exception("This function should only be called by Child DocTypes.")
+			raise RuntimeError("This function should only be called by Child DocTypes.")
 
 		# There are 3 possibilities we have to handle:
 		# 1. The child document was updated directly via a REST API call.
@@ -1834,7 +1833,7 @@ class Document(BaseDocument):
 		"""
 		# NOTE: Very Important to set the value inside "flags".  Otherwise, the data is lost during things like delete().
 
-		if not self.meta.get('istable'):  # Datahenge: Terrible name.  Really means 'is_parent'
+		if not self.meta.get('istable'):  # Datahenge: Terrible name.  Really means 'is_child_table'
 			return self.flags.pop("called_via_parent", False)  # important to set a default, or you get a Key Errror.
 
 		if hasattr(self, "flags") and ("called_via_parent" in self.flags) and self.flags.get("called_via_parent") is True:
@@ -1878,7 +1877,8 @@ def execute_action(doctype, name, action, **kwargs):
 # Datahenge Additions:
 # ------------------
 
-def get_field_differences(doc_before, doc_after,
+def get_field_differences(doc_before,
+						  doc_after,
                           error_on_type_changes=True,
 						  ignore_creation=True,
                           ignore_modified=True,
@@ -1887,8 +1887,11 @@ def get_field_differences(doc_before, doc_after,
 	Datahenge: Given 2 documents, compare values, and return a DeepDiff object.
 	"""
 	from deepdiff import DeepDiff
-	from ftp.ftp_module.generics import doc_to_stringtyped_dict
+	from temporal import validate_datatype  # Late Import due to cross-module dependency
+	from ftp.ftp_module.generics import doc_to_stringtyped_dict  # Late Import due to cross-module dependency
 
+	validate_datatype("doc_before", doc_before, Document, True)
+	validate_datatype("doc_after", doc_after, Document, True)
 	before = doc_to_stringtyped_dict(doc_before)
 	after = doc_to_stringtyped_dict(doc_after)
 
