@@ -734,7 +734,7 @@ def clear_cache(user=None, doctype=None):
 	elif user:
 		frappe.cache_manager.clear_user_cache(user)
 	else: # everything
-		frappe.whatis("Warning: Global Cache is being destroyed by call to frappe.__init__ clear_cache() ")
+		# frappe.whatis("Warning: Global Cache is being destroyed by call to frappe.__init__ clear_cache() ")
 		from frappe import translate
 		frappe.cache_manager.clear_user_cache()  # Note: Also clears the Global Cache
 		frappe.cache_manager.clear_domain_cache()
