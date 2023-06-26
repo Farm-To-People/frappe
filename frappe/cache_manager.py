@@ -54,6 +54,8 @@ def clear_domain_cache():
 	cache.delete_value(domain_cache_keys)
 
 def clear_global_cache():
+	frappe.log_error(f"Global Cache was cleared: {frappe.whatis('trace')}")  # Datahenge: I want to know when.
+
 	from frappe.website.render import clear_cache as clear_website_cache
 
 	clear_doctype_cache()
