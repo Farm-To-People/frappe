@@ -797,7 +797,7 @@ class Database(object):
 				frappe.whatis("WARNING: Implicit SQL Commit (calling db.begin() when already inside a SQL Transaction)")
 			# Datahenge: This thread variable allows me to bypass Frappe/ERPNext code that performs implicit commits, via begin().
 			if hasattr(frappe.local, "dh_ignore_implicit_transactions") and frappe.local.dh_ignore_implicit_transactions:
-				raise Exception("ERROR: Skipping db.begin() because it would implicitly commit changes to the database, and variable 'frappe.local.dh_ignore_implicit_transactions' is already set.")
+				raise RuntimeError("ERROR: Skipping db.begin() because it would implicitly commit changes to the database, and variable 'frappe.local.dh_ignore_implicit_transactions' is already set.")
 
 		self.sql("START TRANSACTION")
 
@@ -821,7 +821,7 @@ class Database(object):
 
 		# SQL Changes are about to be committed.
 		if hasattr(frappe.local, 'dh_ignore_implicit_transactions') and frappe.local.dh_ignore_implicit_transactions:
-			# frappe.whatis("---> INFO: Ignoring non-Datahenge SQL commits.")
+			frappe.whatis("---> INFO: Ignoring non-Datahenge SQL commits.")
 			# Datahenge: This gives us the possibility of -ignoring- what Frappe/ERPNext is doing, and wait for our own, explicit commit.
 			if not end_rollback:
 				print("WARNING: Skipping db.commit() because we're in a Datahenge Rollback Option, and argument 'end_rollback' was not passed.")

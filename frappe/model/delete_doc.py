@@ -29,7 +29,8 @@ def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reloa
 	"""
 		Deletes a doc(dt, dn) and validates if it is not submitted and not linked in a live record
 	"""
-	if not ignore_doctypes: ignore_doctypes = []
+	if not ignore_doctypes:
+		ignore_doctypes = []
 
 	# get from form
 	if not doctype:
@@ -149,8 +150,10 @@ def delete_doc(doctype=None, name=None, force=0, ignore_doctypes=None, for_reloa
 				except ImportError:
 					pass
 
+			# DATAHENGE: WTF? Bug.  Deleting the document is destroying the Global Cache   :facepalm:  :eyeroll:
+			# COMMENT OUT THE clear_default
 			# delete user_permissions
-			frappe.defaults.clear_default(parenttype="User Permission", key=doctype, value=name)
+			# frappe.defaults.clear_default(parenttype="User Permission", key=doctype, value=name)
 
 def add_to_deleted_document(doc):
 	'''Add this document to Deleted Document table. Called after delete'''
@@ -283,6 +286,12 @@ def check_if_doc_is_dynamically_linked(doc, method="Delete"):
 	"""
 	Raise `frappe.LinkExistsError` if the document is dynamically linked
 	"""
+
+	# Datahenge: Skip the Dynamic Link validation for the Daily Order Lines.
+	if doc.doctype == "Daily Order Item":
+		# print(f"check_if_doc_is_dynamically_linked() --> Skipping {doc.doctype}")
+		return
+
 	for df in get_dynamic_link_map().get(doc.doctype, []):
 
 		# Datahenge: Need a way to ignore linked doctypes, no matter what, even if method <> 'Cancel'

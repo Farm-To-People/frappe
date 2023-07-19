@@ -240,11 +240,13 @@ class SMTPServer:
 
 			return self._sess
 
-		except smtplib.SMTPAuthenticationError as e:
+		except smtplib.SMTPAuthenticationError as ex:
 			from frappe.email.doctype.email_account.email_account import EmailAccount
+			# Datahenge: Why throw away the Exception?  :facepalm:
+			print(f"SMTPAuthenticationError: {ex}")
 			EmailAccount.throw_invalid_credentials_exception()
 
-		except _socket.error as e:
+		except _socket.error as ex:
 			# Invalid mail server -- due to refusing connection
 			frappe.throw(
 				_("Invalid Outgoing Mail Server or Port"),

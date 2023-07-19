@@ -3,14 +3,13 @@
 
 # Search
 from __future__ import unicode_literals
-import functools
 import frappe, json
 from frappe.utils import cstr, unique, cint
 from frappe.permissions import has_permission
 from frappe import _, is_whitelisted
 from six import string_types
 import re
-# import wrapt
+import wrapt
 
 UNTRANSLATED_DOCTYPES = ["DocType", "Role"]
 
@@ -79,7 +78,7 @@ def search_widget(doctype, txt, query=None, searchfield=None, start=0,
 		try:
 			is_whitelisted(frappe.get_attr(query))
 			frappe.response["values"] = frappe.call(query, doctype, txt,
-				searchfield, start, page_length, filters) # , as_dict=as_dict
+				searchfield, start, page_length, filters, as_dict=as_dict)
 		except frappe.exceptions.PermissionError as e:
 			if frappe.local.conf.developer_mode:
 				raise e
@@ -233,20 +232,21 @@ def relevance_sorter(key, query, as_dict):
 		value
 	)
 
-def validate_and_sanitize_search_inputs(fn):
-	@functools.wraps(fn)
-	def wrapper(*args, **kwargs):
-		kwargs.update(dict(zip(fn.__code__.co_varnames, args)))
-		sanitize_searchfield(kwargs["searchfield"])
-		kwargs["start"] = cint(kwargs["start"])
-		kwargs["page_len"] = cint(kwargs["page_len"])
+@wrapt.decorator
+def validate_and_sanitize_search_inputs(fn, instance, args, kwargs):
+	kwargs.update(dict(zip(fn.__code__.co_varnames, args)))
 
-		if kwargs["doctype"] and not frappe.db.exists("DocType", kwargs["doctype"]):
-			return []
+	# Datahenge: A key error is being thrown when working with Pricing Rule's item-specific prices.
+	# Not sure why.  In the meantime, going to improve this code:
+	if 'searchfield' not in kwargs:
+		return []
+	kwargs['start'] = cint(kwargs['start'])
+	kwargs['page_len'] = cint(kwargs['page_len'])
 
-		return fn(**kwargs)
+	if kwargs['doctype'] and not frappe.db.exists('DocType', kwargs['doctype']):
+		return []
 
-	return wrapper
+	return fn(**kwargs)
 
 
 @frappe.whitelist()
