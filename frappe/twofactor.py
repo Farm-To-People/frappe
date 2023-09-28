@@ -314,7 +314,7 @@ def send_token_via_email(user, token, otp_secret, otp_issuer, subject=None, mess
 		'sender': None,
 		'subject': subject,
 		'message': message,
-		'header': [_('Verfication Code'), 'blue'],
+		'header': [_('Verification Code'), 'blue'],
 		'delayed': False,
 		'retry':3
 	}
