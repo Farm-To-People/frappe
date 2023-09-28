@@ -140,12 +140,15 @@ def build_table_count_cache():
 		or frappe.flags.in_setup_wizard):
 		return
 
+	database_name = frappe.db.db_name
 	_cache = frappe.cache()
 	data = frappe.db.multisql({
-		"mariadb": """
+		"mariadb": f"""
 			SELECT 	table_name AS name,
 					table_rows AS count
-			FROM information_schema.tables""",
+			FROM information_schema.tables
+			WHERE TABLE_SCHEMA = '{database_name}'
+			""",
 		"postgres": """
 			SELECT 	"relname" AS name,
 					"n_tup_ins" AS count
