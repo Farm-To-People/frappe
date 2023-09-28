@@ -599,14 +599,14 @@ class Database(object):
 		# Datahenge:  Another 'wow!' moment.  The datatype for a 'None' date was AUTOMATICALLY falling back to Today's Date!
 		val = cast_fieldtype(docfield_metadata.fieldtype, val)
 
-		# TODO:  Datahenge:  No Idea why repeating this check is necessary here.  The same code is written only 
-		#        10 lines above this.  But if I don't?  Then 'bench execute' fails with KeyError: 'Global Defaults'
-		#        Pretty crazy stuff.
+		# TODO: Datahenge:  No Idea why repeating this check is necessary here.  The same code is written only 
+		#       10 lines above this.  But if I don't?  Then 'bench execute' fails with KeyError: 'Global Defaults'
+		#       Pretty crazy stuff.
 		if not doctype in self.value_cache:
 			self.value_cache = self.value_cache[doctype] = {}
 
-		# TODO:  Datahenge:  If the SQL result is a DateTime, would be great if framework applied a datetime.date format
-		#        immediately to what's in the cache.
+		# TODO: Datahenge:  If the SQL result is a DateTime, would be great if framework applied a datetime.date format
+		#       immediately to what's in the cache.
 		self.value_cache[doctype][fieldname] = val
 
 		return val
@@ -882,7 +882,8 @@ class Database(object):
 				SELECT table_name
 				FROM information_schema.tables
 				WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-			""")
+				AND TABLE_SCHEMA = %(database_name)s
+			""", values={"database_name": frappe.db.db_name})
 			tables = {d[0] for d in table_rows}
 			frappe.cache().set_value('db_tables', tables)
 		return tables
@@ -961,13 +962,16 @@ class Database(object):
 			now_datetime() - relativedelta(minutes=minutes))[0][0]
 
 	def get_db_table_columns(self, table):
-		"""Returns list of column names from given table."""
+		"""
+		Returns list of column names from given table.
+		"""
 		columns = frappe.cache().hget('table_columns', table)
 		if columns is None:
 			columns = [r[0] for r in self.sql('''
 				select column_name
 				from information_schema.columns
-				where table_name = %s ''', table)]
+				WHERE TABLE_SCHEMA = %(database_name)s 
+				AND table_name = %(table)s ''', values={"database_name": frappe.db.db_name, "table": table})]
 
 			if columns:
 				frappe.cache().hset('table_columns', table, columns)

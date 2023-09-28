@@ -54,8 +54,6 @@ def clear_domain_cache():
 	cache.delete_value(domain_cache_keys)
 
 def clear_global_cache():
-	frappe.log_error(f"Global Cache was cleared: {frappe.whatis('trace')}")  # Datahenge: I want to know when.
-
 	from frappe.website.render import clear_cache as clear_website_cache
 
 	clear_doctype_cache()
@@ -142,12 +140,15 @@ def build_table_count_cache():
 		or frappe.flags.in_setup_wizard):
 		return
 
+	database_name = frappe.db.db_name
 	_cache = frappe.cache()
 	data = frappe.db.multisql({
-		"mariadb": """
+		"mariadb": f"""
 			SELECT 	table_name AS name,
 					table_rows AS count
-			FROM information_schema.tables""",
+			FROM information_schema.tables
+			WHERE TABLE_SCHEMA = '{database_name}'
+			""",
 		"postgres": """
 			SELECT 	"relname" AS name,
 					"n_tup_ins" AS count
