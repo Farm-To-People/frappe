@@ -971,7 +971,7 @@ class Database(object):
 				select column_name
 				from information_schema.columns
 				WHERE TABLE_SCHEMA = %(database_name)s 
-				AND table_name = %(table)s ''', values={"database_name": frappe.db.db_name, "table": table}, debug=True)]
+				AND table_name = %(table)s ''', values={"database_name": frappe.db.db_name, "table": table})]
 
 			if columns:
 				frappe.cache().hset('table_columns', table, columns)
