@@ -24,6 +24,9 @@
   "is_primary_address",
   "is_shipping_address",
   "disabled",
+  "onfleet",
+  "latitude",
+  "longitude",
   "linked_with",
   "links"
  ],
@@ -143,12 +146,29 @@
    "fieldtype": "Table",
    "label": "Links",
    "options": "Dynamic Link"
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "9"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "9"
+  },
+  {
+   "fieldname": "onfleet",
+   "fieldtype": "Heading",
+   "label": "Onfleet"
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2021-06-01 16:14:37.284830",
+ "modified": "2023-10-13 13:04:44.474325",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
