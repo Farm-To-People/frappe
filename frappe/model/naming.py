@@ -2,11 +2,13 @@
 # MIT License. See license.txt
 
 from __future__ import unicode_literals
+
+import re
+from six import string_types
+
 import frappe
 from frappe import _
 from frappe.utils import now_datetime, cint, cstr
-import re
-from six import string_types
 from frappe.model import log_types
 
 
@@ -128,7 +130,7 @@ def make_autoname(key="", doctype="", doc=""):
 		   DE/09/01/0001 where 09 is the year, 01 is the month and 0001 is the series
 	"""
 	if key == "hash":
-		return frappe.generate_hash(doctype, 10)
+		return frappe.generate_hash(doctype, 10)  # TODO: Datahenge : Using something like the Birthday Paradox, I'm unconvinced that 10 characters is unique enough.
 
 	if "#" not in key:
 		key = key + ".#####"
@@ -184,6 +186,9 @@ def parse_naming_series(parts, doctype='', doc=''):
 
 
 def getseries(key, digits):
+	"""
+	Datahenge: This really needs to disappear, and be replaced with a non-locking solution.
+	"""
 	# series created ?
 	current = frappe.db.sql("SELECT `current` FROM `tabSeries` WHERE `name`=%s FOR UPDATE", (key,))
 	if current and current[0][0] is not None:
