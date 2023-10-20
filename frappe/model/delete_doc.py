@@ -167,6 +167,10 @@ def add_to_deleted_document(doc):
 		)).db_insert()
 
 def update_naming_series(doc):
+	"""
+	Datahenge: Frappe is using this to revert a Naming Series consumption, if the deleted
+	document has the most-recent Series value.  I guess this exists to prevent unnecessary "holes" in the Series?  :shrug:
+	"""
 	if doc.meta.autoname:
 		if doc.meta.autoname.startswith("naming_series:") \
 			and getattr(doc, "naming_series", None):
