@@ -58,7 +58,7 @@ class Address(Document):
 
 		from temporal import date_to_iso_string
 		from temporal.core import get_system_date
-		from ftp.ftp_fleet.onfleet_api.daily_order import unassign_tasks_by_order
+		# from ftp.ftp_fleet.onfleet_api.daily_order import unassign_tasks_by_order
 
 		if (self.address_type != "Shipping") or (not self.is_shipping_address):
 			if verbose:
@@ -84,7 +84,8 @@ class Address(Document):
 				doc_daily_order = frappe.get_doc("Daily Order", daily_order)
 
 				if doc_daily_order.is_past_cutoff:
-					unassign_tasks_by_order(doc_daily_order.name)  # Onfleet - Mark any related Tasks as Unassigned.
+					pass
+					# unassign_tasks_by_order(doc_daily_order.name)  # Onfleet - Mark any related Tasks as Unassigned.
 				else:
 					doc_daily_order.set_default_address()
 					doc_daily_order.save()  # January 5th 2023 : Change from db_update() to save(), to ensure that Shipping Rule is recalculated.
