@@ -104,10 +104,10 @@ def prepare_options(html, options):
 	})
 
 	if not options.get("margin-right"):
-		options['margin-right'] = '15mm'
+		options['margin-right'] = options.get("margin", "15mm")  # DH - Made this a bit better
 
 	if not options.get("margin-left"):
-		options['margin-left'] = '15mm'
+		options['margin-left'] = options.get("margin", "15mm")  # DH - Made this a bit better
 
 	html, html_options = read_options_from_html(html)
 	options.update(html_options or {})
@@ -153,8 +153,8 @@ def read_options_from_html(html):
 			match = pattern.findall(html)
 			if match:
 				options[attr] = str(match[-1][3]).strip()
-		except:
-			pass
+		except Exception as ex:
+			print(f"Exception thrown in 'read_options_from_html()' : {ex}")
 
 	return str(soup), options
 
