@@ -58,7 +58,6 @@ class Address(Document):
 
 		from temporal import date_to_iso_string
 		from temporal.core import get_system_date
-		# from ftp.ftp_fleet.onfleet_api.daily_order import unassign_tasks_by_order
 
 		if (self.address_type != "Shipping") or (not self.is_shipping_address):
 			if verbose:
@@ -76,21 +75,16 @@ class Address(Document):
 		for customer_key in customer_keys:
 			# For each customer found, update the Orders.
 			filters = { "delivery_date": [">=", tomorrow_date],
-			            "customer": customer_key }
+			            "customer": customer_key,
+						"is_past_cutoff": False }  # Bug fix February 22nd, 2023, from Slack conversation and customer Gleap.
 			daily_orders = frappe.get_list("Daily Order", filters=filters, pluck='name')
 			for daily_order in daily_orders:
 				if verbose:
 					print(f"Customer updated shipping address. Updating Daily Order {daily_order}")
 				doc_daily_order = frappe.get_doc("Daily Order", daily_order)
-
-				if doc_daily_order.is_past_cutoff:
-					pass
-					# unassign_tasks_by_order(doc_daily_order.name)  # Onfleet - Mark any related Tasks as Unassigned.
-				else:
-					doc_daily_order.set_default_address()
-					doc_daily_order.save()  # January 5th 2023 : Change from db_update() to save(), to ensure that Shipping Rule is recalculated.
-					order_address_updated = True
-
+				doc_daily_order.set_default_address()
+				doc_daily_order.save()  # January 5th 2023 : Change from db_update() to save(), to ensure that Shipping Rule is recalculated.
+				order_address_updated = True
 		if order_address_updated:
 			frappe.msgprint("\u2713 Updated shipping address on Daily Orders.")
 
