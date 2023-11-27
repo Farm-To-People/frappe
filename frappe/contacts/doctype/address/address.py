@@ -76,17 +76,19 @@ class Address(Document):
 			# For each customer found, update the Orders.
 			filters = { "delivery_date": [">=", tomorrow_date],
 			            "customer": customer_key,
-						"is_past_cutoff": False }  # Bug fix February 22nd, 2023, from Slack conversation and customer Gleap.
+						"is_past_cutoff": False
+			}
 			daily_orders = frappe.get_list("Daily Order", filters=filters, pluck='name')
 			for daily_order in daily_orders:
-				if verbose:
-					print(f"Customer updated shipping address. Updating Daily Order {daily_order}")
 				doc_daily_order = frappe.get_doc("Daily Order", daily_order)
 				doc_daily_order.set_default_address()
 				doc_daily_order.save()  # January 5th 2023 : Change from db_update() to save(), to ensure that Shipping Rule is recalculated.
 				order_address_updated = True
+				if verbose:
+					print(f"Customer account Shipping address was modified: updated related Daily Order {daily_order}")
+
 		if order_address_updated:
-			frappe.msgprint("\u2713 Updated shipping address on Daily Orders.")
+			frappe.msgprint("\u2713 Updated shipping address on non-cutoff Daily Orders.")
 
 	# End Datahenge Custom Functions
 

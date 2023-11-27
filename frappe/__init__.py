@@ -1925,7 +1925,7 @@ def print_caller():
 	msg += f"\n  * Caller Line: {indirect_caller_line}\n"
 	print(msg)
 
-def is_env_var_set(variable_name):
+def is_env_var_set(variable_name) -> bool:
 	"""
 	Returns true if an Environment Variable is set to 1.
 	"""
