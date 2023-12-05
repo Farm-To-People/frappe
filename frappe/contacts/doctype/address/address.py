@@ -28,7 +28,7 @@ class Address(Document):
 	# Datahenge
 	def on_update(self):
 		self.update_customer_borough()
-		self.update_daily_orders(verbose=True)
+		self.update_daily_orders(verbose=False)
 
 	def update_customer_borough(self):
 		if (self.address_type != "Shipping") or (not self.is_shipping_address):
@@ -58,6 +58,7 @@ class Address(Document):
 
 		from temporal import date_to_iso_string
 		from temporal.core import get_system_date
+		from ftp import Checkpoint
 
 		if (self.address_type != "Shipping") or (not self.is_shipping_address):
 			if verbose:
@@ -79,6 +80,10 @@ class Address(Document):
 						"is_past_cutoff": False
 			}
 			daily_orders = frappe.get_list("Daily Order", filters=filters, pluck='name')
+			if verbose:
+				print(f"Customer address was modified. Updating {len(daily_orders)} related Daily Orders...")
+				checkpoint = Checkpoint("Address Modified, Update Orders")
+
 			for daily_order in daily_orders:
 				doc_daily_order = frappe.get_doc("Daily Order", daily_order)
 				doc_daily_order.set_default_address()
@@ -86,6 +91,9 @@ class Address(Document):
 				order_address_updated = True
 				if verbose:
 					print(f"Customer account Shipping address was modified: updated related Daily Order {daily_order}")
+
+			if verbose:
+				checkpoint.elapsed()
 
 		if order_address_updated:
 			frappe.msgprint("\u2713 Updated shipping address on non-cutoff Daily Orders.")
