@@ -767,7 +767,7 @@ def remove_file(fid=None, attached_to_doctype=None, attached_to_name=None, from_
 
 
 def get_max_file_size():
-	return cint(conf.get('max_file_size')) or 10485760
+	return cint(conf.get('max_file_size')) or 52428800  # Datahenge: Increased original size 10 megabytes to 50
 
 
 def remove_all(dt, dn, from_delete=False, delete_permanently=False):

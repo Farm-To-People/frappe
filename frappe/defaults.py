@@ -194,7 +194,6 @@ def clear_default(key=None, value=None, parent=None, name=None, parenttype=None)
 
 	if not parent:
 		print("WARNING: Global Cache is being destroyed by defaults.clear_default()")
-		# frappe.whatis("WARNING: Global Cache is being destroyed by defaults.clear_default()")
 	_clear_cache(parent)
 
 def get_defaults_for(parent="__default"):
