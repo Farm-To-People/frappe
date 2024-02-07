@@ -134,7 +134,7 @@ frappe.request.call = function(opts) {
 				frappe.app.redirect_to_login();
 			} else {
 				frappe.msgprint({title: __("Not found"), indicator: 'red',
-					message: __('The resource you are looking for is not available')});
+					message: __('The resource you are looking for is not available (404)')});
 			}
 		},
 		403: function(xhr) {
@@ -197,12 +197,18 @@ frappe.request.call = function(opts) {
 				frappe.request.report_error(xhr, opts);
 			}
 		},
+		502: function(xhr) {
+			frappe.msgprint(__("Internal Server Error (502)"));
+			try {
+				opts.error_callback && opts.error_callback();
+				frappe.request.report_error(xhr, opts);
+			} catch (e) {
+				frappe.request.report_error(xhr, opts);
+			}
+		},
 		504: function(xhr) {
 			frappe.msgprint(__("Request Timed Out"))
 			opts.error_callback && opts.error_callback();
-		},
-		502: function(xhr) {
-			frappe.msgprint(__("Internal Server Error"));
 		}
 	};
 
