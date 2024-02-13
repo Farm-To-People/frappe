@@ -4,6 +4,8 @@
 from __future__ import unicode_literals
 import frappe
 
+NoneType = type(None)
+
 # select doctypes that are accessed by the user (not read_only) first, so that the
 # the validation message shows the user-facing doctype first.
 # For example Journal Entry should be validated before GL Entry (which is an internal doctype)
@@ -26,6 +28,7 @@ dynamic_link_queries =  [
 	order by `tabDocType`.read_only, `tabDocType`.in_create""",
 ]
 
+
 def get_dynamic_link_map() -> dict:
 	"""
 	Build a map of all dynamically linked tables. For example,
@@ -40,25 +43,24 @@ def get_dynamic_link_map() -> dict:
 	# Datahenge: Try to fetch from Redis cache first, instead of doing loops and SQL.
 	coded_result = frappe.cache().hgetall("dh_dynamic_link_map")
 	if coded_result:
-		# print(f"Number of keys in decoded_result = {len(coded_result.keys())}")
+		# print("INFO: Using Datahenge cached 'dh_dynamic_link_map'")
 		result = {}
 		for key, data in sorted(coded_result.items()):
 			result[key.decode()] = data  # need to decode the binary Keys into Strings
 		return result
 
-	# Datahenge: Otherwise, do the usual Frappe Framework methods.
+	# Datahenge: Attempt to find Dynamic Link Map via the usual Frappe Framework methods.
 	# NOTE: You'll want to ensure that "Link" DocFields always have their own SQL index.
 
 	if getattr(frappe.local, 'dynamic_link_map', None) is None or frappe.flags.in_test:
-		# Build from scratch
+		# Build the map from scratch:
 		print("NOTE: Building a 'dynamic_link_map' map from scratch via loops and SQL queries...")
 		dynamic_link_map = {}
 		dynamic_links = get_dynamic_links()
 		# print(f"get_dynamic_link_map() looping through {len(dynamic_links)} links.  One SQL query required per link.")
 		for df in dynamic_links:
 			meta = frappe.get_meta(df.parent)
-			if meta.issingle:
-				# always check in Single DocTypes
+			if meta.issingle:  # always check in Single DocTypes
 				dynamic_link_map.setdefault(meta.name, []).append(df)
 			else:
 				try:
@@ -70,12 +72,18 @@ def get_dynamic_link_map() -> dict:
 
 		frappe.local.dynamic_link_map = dynamic_link_map  # pylint: disable=assigning-non-slot
 
-	# Datahenge : Now that we have this, write to Redis, so all subsequent calls are very fast.
-	print("NOTE: Writing the 'dynamic_link_map' to local Redis cache...")
-	for key, value in dynamic_link_map.items():
-		frappe.cache().hset("dh_dynamic_link_map", key, value)
+		# Datahenge : Now that we have this data, save in Redis, so all subsequent calls are very fast.
+		if dynamic_link_map:
+			print("INFO: Writing contents of dynamic_link_map to Redis cache key 'dh_dynamic_link_map'")
+			for key, value in dynamic_link_map.items():
+				#if isinstance(key, NoneType):
+				#	key = 'None'
+				frappe.cache().hset("dh_dynamic_link_map", key, value)  # really stupid, because Frappe's dictionary has a key of None
+		else:
+			print("WARNING: Suspiciously found nothing in dynamic_link_map.items()")
 
 	return frappe.local.dynamic_link_map
+
 
 def get_dynamic_links():
 	'''Return list of dynamic link fields as DocField.

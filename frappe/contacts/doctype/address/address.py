@@ -28,7 +28,10 @@ class Address(Document):
 	# Datahenge
 	def on_update(self):
 		self.update_customer_borough()
-		self.update_daily_orders(verbose=False)
+		if bool(self.flags.get("dh_address_skip_orders_cascade", False)):
+			print("Address modified, but will not cascade into Daily Orders, because I was told not to...")
+		else:
+			self.update_daily_orders(verbose=False)
 
 	def update_customer_borough(self):
 		if (self.address_type != "Shipping") or (not self.is_shipping_address):
@@ -42,14 +45,13 @@ class Address(Document):
 		if not self.pincode:
 			return
 
-		five_digit_postal_code = self.pincode[:5]  # Customer's address may be a 9-digit Zip.
-		doc_postal_code = frappe.get_doc("Postal Code", five_digit_postal_code)  # Fetch the Postal Code record.
+		postal_code_territory: str = frappe.db.get_value("Postal Code", self.pincode[:5], "territory")  # Customer's address might be a 9-digit Zip.
 
 		for key in customer_keys:
 			doc_customer = frappe.get_doc("Customer", key)
-			if doc_customer.territory != doc_postal_code.territory:  # Territory has changed...
-				doc_customer.territory = doc_postal_code.territory
-				doc_customer.save()
+			if doc_customer.territory != postal_code_territory:  # Territory has changed...
+				doc_customer.territory = postal_code_territory
+				doc_customer.db_update()  # For performance reasons, just edit the field and skip the Controller Methods
 
 	def update_daily_orders(self, verbose=False):
 		"""
