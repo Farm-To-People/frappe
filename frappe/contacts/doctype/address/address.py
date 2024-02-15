@@ -29,7 +29,8 @@ class Address(Document):
 	def on_update(self):
 		self.update_customer_borough()
 		if bool(self.flags.get("dh_address_skip_orders_cascade", False)):
-			print("Address modified, but will not cascade into Daily Orders, because I was told not to...")
+			pass
+			# print("Address modified, but will not cascade into Daily Orders, because I was told not to...")
 		else:
 			self.update_daily_orders(verbose=False)
 
