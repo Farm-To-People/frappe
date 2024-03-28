@@ -20,8 +20,8 @@ from enum import Enum  # Datahenge: Attempt at a more-flexible print function
 _dev_server = os.environ.get('DEV_SERVER', False)
 
 if _dev_server:
-	warnings.simplefilter('always', DeprecationWarning)
-	warnings.simplefilter('always', PendingDeprecationWarning)
+	warnings.simplefilter('ignore', DeprecationWarning)
+	warnings.simplefilter('ignore', PendingDeprecationWarning)
 
 from six import iteritems, binary_type, text_type, string_types
 from werkzeug.local import Local, release_local
