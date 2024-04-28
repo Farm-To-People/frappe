@@ -38,7 +38,8 @@ def set_new_name(doc):
 	elif getattr(doc.meta, "issingle", False):
 		doc.name = doc.doctype
 
-	elif getattr(doc.meta, "istable", False):
+	# Datahenge - Allow Child Table to use naming rules, instead of always being a hash
+	elif getattr(doc.meta, "istable", False) and not autoname.lower():
 		doc.name = make_autoname("hash", doc.doctype)
 
 	if not doc.name:
@@ -130,7 +131,7 @@ def make_autoname(key="", doctype="", doc=""):
 		   DE/09/01/0001 where 09 is the year, 01 is the month and 0001 is the series
 	"""
 	if key == "hash":
-		return frappe.generate_hash(doctype, 10)  # TODO: Datahenge : Using something like the Birthday Paradox, I'm unconvinced that 10 characters is unique enough.
+		return frappe.generate_hash(doctype, 20)  # Datahenge : Using something like the Birthday Paradox, I'm unconvinced that 10 characters is unique enough.
 
 	if "#" not in key:
 		key = key + ".#####"
