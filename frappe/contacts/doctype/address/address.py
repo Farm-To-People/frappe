@@ -124,6 +124,26 @@ class Address(Document):
 		self.validate_preferred_address()
 		set_link_title(self)
 		deduplicate_dynamic_links(self)
+		self.check_for_blocked_address()
+
+
+	def check_for_blocked_address(self):
+		# Filter through the address doctype to check for address with the same info
+		blocked_address = frappe.get_all (
+			"Address",
+			filters = {
+				"address_line1": self.address_line1,
+				"address_line2": self.address_line2,
+				"city": self.city,
+				"state": self.state,
+				"pincode": self.pincode,
+				"address_type": "Blocked (Do Not Ship)"
+			},
+			pluck = "name"
+		)
+
+		if blocked_address:
+			frappe.throw("The shipping address for this order is marked as 'Blocked (Do Not Ship)")
 
 	def link_address(self):
 		"""Link address based on owner"""
