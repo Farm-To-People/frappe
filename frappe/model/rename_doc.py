@@ -3,7 +3,6 @@
 
 from __future__ import print_function, unicode_literals
 
-import json
 import frappe
 from frappe import _, bold
 from frappe.model.dynamic_links import get_dynamic_link_map
@@ -34,6 +33,7 @@ def update_document_title(doctype, docname, title_field=None, old_title=None, ne
 				)
 
 	return docname
+
 
 def rename_doc(doctype, old, new, force=False, merge=False, ignore_permissions=False, ignore_if_exists=False, show_alert=True):
 	"""
@@ -67,6 +67,9 @@ def rename_doc(doctype, old, new, force=False, merge=False, ignore_permissions=F
 
 	# update link fields' values
 	link_fields = get_link_fields(doctype)
+	#print("Updating foreign keys in the following Tables:")
+	#for each_field in  sorted(link_fields, key=lambda k: k['parent']):
+	#	print(f"{each_field.parent}.{each_field.fieldname}")
 	update_link_field_values(link_fields, old, new, doctype)
 
 	rename_dynamic_links(doctype, old, new)
@@ -122,6 +125,7 @@ def rename_doc(doctype, old, new, force=False, merge=False, ignore_permissions=F
 
 	return new
 
+
 def update_assignments(old, new, doctype):
 	old_assignments = frappe.parse_json(frappe.db.get_value(doctype, old, '_assign')) or []
 	new_assignments = frappe.parse_json(frappe.db.get_value(doctype, new, '_assign')) or []
@@ -143,6 +147,7 @@ def update_assignments(old, new, doctype):
 
 	unique_assignments = list(set(old_assignments + new_assignments))
 	frappe.db.set_value(doctype, new, '_assign', frappe.as_json(unique_assignments, indent=0))
+
 
 def update_user_settings(old, new, link_fields):
 	'''

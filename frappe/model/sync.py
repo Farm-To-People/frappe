@@ -63,7 +63,11 @@ def sync_for(app_name, force=0, reset_permissions=False):
 
 	for module_name in frappe.local.app_modules.get(app_name) or []:
 		try:
-			folder = os.path.dirname(frappe.get_module(app_name + "." + module_name).__file__)
+			bp_dir_name = frappe.get_module(app_name + "." + module_name).__file__
+			if not bp_dir_name:
+				frappe.whatis(app_name)
+				frappe.whatis(module_name)
+			folder = os.path.dirname(bp_dir_name)
 		except ModuleNotFoundError as ex:
 			raise ValueError(f"Cannot load module '{module_name}'.  If this module was deleted, verify cache and contents of 'modules.txt' in the App's folder.") from ex
 		get_doc_files(files, folder)
