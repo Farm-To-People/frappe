@@ -108,6 +108,7 @@ class RedisWrapper(redis.Redis):
 		except redis.exceptions.ConnectionError:
 			pass
 
+	# TODO:  What's the point of the duplicate function name?
 	def delete_key(self, *args, **kwargs):
 		self.delete_value(*args, **kwargs)
 
