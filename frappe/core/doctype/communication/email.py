@@ -318,6 +318,11 @@ def get_cc(doc, recipients=None, fetched_from_email_account=False):
 
 	if getattr(doc, "send_me_a_copy", False) and doc.sender not in cc:
 		cc.append(doc.sender)
+	
+	# Adding this because sender is always orders@farmtopeople.com
+	user_doc = frappe.get_doc("User", frappe.session.user)
+	if user_doc.email and user_doc.email not in cc:
+		cc.append(user_doc.email)
 
 	if cc:
 		# exclude unfollows, recipients and unsubscribes
