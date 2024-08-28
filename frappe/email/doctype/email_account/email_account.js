@@ -123,9 +123,14 @@ frappe.ui.form.on("Email Account", {
 		}
 
 		// Datahenge: Begin
-		frm.add_custom_button(__('Send Test Email'), function() {
-			send_test_email(frm);
+		frm.add_custom_button(__('Validate Settings'), function() {
+			button_validate_settings(frm);
 		});
+
+		frm.add_custom_button(__('Send Test Email'), function() {
+			button_send_test_email(frm);
+		});
+
 		// Datahenge: End
 
 	},
@@ -216,8 +221,20 @@ frappe.ui.form.on("Email Account", {
 });
 
 
+function button_validate_settings(frm) {
+	// Datahenge: Add the ability to test settings and clearly display the results to the User.
+	frappe.call({
+		doc: frm.doc,
+		method:"validate_and_run_tests",
+		callback(r) {
+			frappe.msgprint(r);
+			frappe.msgprint(r.message);
+		}
+	});
+}
 
-function send_test_email(frm) {
+
+function button_send_test_email(frm) {
 	// Datahenge: Add the ability to test the Email Account.
 	let me = this;
 

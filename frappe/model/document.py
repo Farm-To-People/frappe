@@ -1797,7 +1797,7 @@ class Document(BaseDocument):
 		raise ValueError(f"Function 'set_parent_doc()' was unable to find a parent for calling Document {self.doctype} - {self.name}")
 
 
-	def as_child_get_original_doc(self, _parent_doc=None):
+	def as_child_get_original_doc(self, _parent_doc=None, parent_refers_to_child="items"):
 		"""
 		Return a copy of the original Child Document, prior to changes.
 		* Custom function by Datahenge
@@ -1822,7 +1822,7 @@ class Document(BaseDocument):
 		if not parent_orig:
 			return None  # parent is new, therefore no original child document.
 		try:
-			return next(iter([ line for line in parent_orig.items if line.name == self.name ]))
+			return next(iter([ line for line in getattr(parent_orig, parent_refers_to_child) if line.name == self.name ]))
 		except StopIteration:
 			return None  # Order Line is New.
 

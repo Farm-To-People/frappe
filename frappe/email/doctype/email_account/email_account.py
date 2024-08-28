@@ -41,6 +41,7 @@ class EmailAccount(Document):
 		self.name = self.email_account_name
 
 	def validate(self):
+
 		"""Validate Email Address and check POP3/IMAP and SMTP connections is enabled."""
 		if self.email_id:
 			validate_email_address(self.email_id, True)
@@ -74,7 +75,9 @@ class EmailAccount(Document):
 
 
 				if self.enable_outgoing:
-					self.check_smtp()
+					pass
+					# Datahenge: Quit doing this.  Let me save what I want to save.  Check it later
+					# self.check_smtp()
 			else:
 				if self.enable_incoming or (self.enable_outgoing and not self.no_smtp_authentication):
 					frappe.throw(_("Password is required or select Awaiting Password"))
@@ -736,7 +739,6 @@ class EmailAccount(Document):
 			if frappe.db.exists("Email Account", {"enable_automatic_linking": 1, "name": ('!=', self.name)}):
 				frappe.throw(_("Automatic Linking can be activated only for one Email Account."))
 
-
 	def append_email_to_sent_folder(self, message):
 		email_server = None
 		try:
@@ -755,6 +757,16 @@ class EmailAccount(Document):
 				email_server.imap.append("Sent", "\\Seen", imaplib.Time2Internaldate(time.time()), message)
 			except Exception:
 				frappe.log_error()
+
+	@frappe.whitelist()
+	def validate_and_run_tests(self, recipient=''):
+
+		try:
+			self.check_smtp()  # unfortunately does not return a result
+			frappe.msgprint("\u2713 No errors while calling check_smtp()", to_console=True)
+		except Exception as ex:
+			frappe.msgprint(f"{ex}", to_console=True)
+
 
 @frappe.whitelist()
 def get_append_to(doctype=None, txt=None, searchfield=None, start=None, page_len=None, filters=None):
