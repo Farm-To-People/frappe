@@ -371,6 +371,16 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 	sites_path = sites_path or getattr(local, "sites_path", None)
 	site_path = site_path or getattr(local, "site_path", None)
 
+	if not sites_path:
+		print("WARNING: get_site_config() : No value for variable 'sites_path'")
+	else:
+		print(f"INFO: Value for 'sites_path' = {pathlib.Path(sites_path).absolute()}")
+
+	if not site_path:
+		print("get_site_config() : No value for variable 'site_path'")
+	else:
+		print(f"INFO: Value for 'site_path' = {pathlib.Path(site_path).absolute()}")
+
 	if sites_path:
 		config.update(get_common_site_config(sites_path))
 
