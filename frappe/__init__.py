@@ -18,6 +18,7 @@ import importlib
 import inspect
 import json
 import os
+import pathlib  # Datahenge: Needed for code changes later in this module
 import re
 import signal
 import traceback
@@ -63,9 +64,11 @@ _dev_server = int(sbool(os.environ.get("DEV_SERVER", False)))
 _tune_gc = bool(sbool(os.environ.get("FRAPPE_TUNE_GC", True)))
 
 if _dev_server:
-	warnings.simplefilter("always", DeprecationWarning)
-	warnings.simplefilter("always", PendingDeprecationWarning)
-
+	# warnings.simplefilter("always", DeprecationWarning)
+	# warnings.simplefilter("always", PendingDeprecationWarning)
+	# Datahenge - I don't care about the deprecation warnings, just hide them.
+	warnings.simplefilter("ignore", DeprecationWarning)
+	warnings.simplefilter("ignore", PendingDeprecationWarning)
 
 class _dict(dict):
 	"""dict like object that exposes keys as attributes"""
@@ -375,6 +378,16 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 	sites_path = sites_path or getattr(local, "sites_path", None)
 	site_path = site_path or getattr(local, "site_path", None)
 
+	if not sites_path:
+		print("WARNING: get_site_config() : No value for variable 'sites_path'")
+	else:
+		print(f"INFO: Value for 'sites_path' = {pathlib.Path(sites_path).absolute()}")
+
+	if not site_path:
+		print("get_site_config() : No value for variable 'site_path'")
+	else:
+		print(f"INFO: Value for 'site_path' = {pathlib.Path(site_path).absolute()}")
+
 	if sites_path:
 		config.update(get_common_site_config(sites_path))
 
@@ -536,6 +549,7 @@ def msgprint(
 	wide: bool = False,
 	*,
 	realtime=False,
+	to_console=False,   # Datahenge:  Adding an optional argument here, in addition to using the flags.print_messages
 ) -> None:
 	"""Print a message to the user (via HTTP response).
 	Messages are sent in the `__server_messages` property in the
@@ -550,8 +564,9 @@ def msgprint(
 	:param is_minimizable: [optional] Allow users to minimize the modal
 	:param wide: [optional] Show wide modal
 	:param realtime: Publish message immediately using websocket.
+	:param to_console: [optional] Indicates the message should also 'print()' to console	
 	"""
-	import inspect
+	# import inspect
 	import sys
 
 	msg = safe_decode(msg)
@@ -573,6 +588,9 @@ def msgprint(
 
 	if as_table and type(msg) in (list, tuple):
 		out.as_table = 1
+	else:  # Datahenge: Replace newlines with <br>, since we're displaying on a web page.
+		if isinstance(out.message, str):
+			out.message = out.message.replace("\n", "<br>")
 
 	if as_list and type(msg) in (list, tuple):
 		out.as_list = 1
@@ -583,8 +601,20 @@ def msgprint(
 		else:
 			msg = _strip_html_tags(out.message)
 
-	if flags.print_messages and out.message:
-		print(f"Message: {_strip_html_tags(out.message)}")
+	# Datahenge: If the 'to_console' argument is set, this is an alternative to locals.flags
+
+	#if flags.print_messages and out.message:
+	#	print(f"Message: {_strip_html_tags(out.message)}")
+
+	if (to_console or flags.print_messages) and out.message:
+		if not isinstance(out.message, str):
+			console_message = str(out.message)  # sometimes the out.message is a Python List.
+		else:
+			console_message = out.message
+		console_message = console_message.replace( "<br>", "\n")
+		print(f"Message: {_strip_html_tags(console_message)}")
+
+	# Datahenge - End
 
 	out.title = title or _("Message", context="Default title of the message dialog")
 
@@ -1501,6 +1531,12 @@ def get_module_path(module, *joins):
 	from frappe.modules.utils import get_module_app
 
 	app = get_module_app(module)
+
+	# TODO:  Is this still valid?
+	# Datahenge: Let's provide some better feedback.  This often happens on Renaming a module.
+	if not module in local.module_app.keys():
+		raise KeyError(f"Cannot find module '{module}' in object 'local.module_app'.  Review the contents of 'modules.txt' in the App directory.")
+
 	return get_pymodule_path(app + "." + scrub(module), *joins)
 
 
@@ -2238,7 +2274,13 @@ def attach_print(
 	local.flags.ignore_print_permissions = False
 
 	if not file_name:
-		file_name = name
+		if name:
+			file_name = name
+		else:
+			# Datahenge: What happens if name is None?  Mention this to the User and developers:
+			msgprint("attach_print() : Unable to determine a value for 'file_name'", to_console=True)
+			return
+
 	file_name = cstr(file_name).replace(" ", "").replace("/", "-") + ext
 
 	return {"fname": file_name, "fcontent": content}
@@ -2479,6 +2521,10 @@ def safe_decode(param, encoding="utf-8", fallback_map: dict | None = None):
 	:param fallback_map: A fallback map to reference in case of a LookupError
 	:return:
 	"""
+	# Datahenge: Automatically handle Exceptions as strings.
+	if isinstance(param, Exception):
+		param = str(param)
+
 	try:
 		param = param.decode(encoding)
 	except LookupError:
@@ -2554,3 +2600,156 @@ if _tune_gc:
 
 # Remove references to pattern that are pre-compiled and loaded to global scopes.
 re.purge()
+
+
+# -------------------------
+# Datahenge
+# -------------------------
+
+from enum import Enum
+
+# I tried guerilla patching the 'whatis()' function in FTP's hooks.py.
+# The result was inconsistent.  For example, I could not run automation.py code
+# using `bench execute`, because the Bench wasn't aware of the patched Frappe module.
+# This guerilla patching simply isn't worth the effort.  Hard-coding the function here, for now.
+
+def print_caller():
+	"""
+	A function for printing the Caller at any point in Python code.
+	"""
+
+	# Because this function itself was called, we must fetch the results of the caller's caller.
+	indirect_caller = inspect.stack()[2]
+	indirect_caller_path = indirect_caller[1]
+	indirect_caller_line = indirect_caller[2]
+	msg =  f"\n  * Caller Path: {indirect_caller_path}"
+	msg += f"\n  * Caller Line: {indirect_caller_line}\n"
+	print(msg)
+
+def is_env_var_set(variable_name) -> bool:
+	"""
+	Returns true if an Environment Variable is set to 1.
+	"""
+	if not variable_name:
+		return False
+	variable_value = os.environ.get(variable_name)
+	if not variable_value:
+		return False
+	try:
+		return int(variable_value) == 1
+	except Exception:
+		return False
+
+def dprint(msg, check_env=None, force=None):
+	"""
+	A print() that only prints when an environment variable is set.
+	Very useful for conditional printing, depending on whether you want to debug code, or not.
+	"""
+	if force:
+		print(msg)
+	elif is_env_var_set(check_env):
+		print(msg)
+
+def show_callstack():
+	"""
+	Just a helpful function used when debugging code.
+	"""
+
+	indent = "  "
+	inspected_stack = inspect.stack()
+	print("-------CALL STACK--------")
+	reversed_stack = reversed(list(inspected_stack))
+	for idx, each_level in enumerate(reversed_stack):
+		if str(each_level[3]) == 'show_callstack':
+			continue
+		value = str(each_level[3]) + " (line = " + str(each_level[2]) + ")"
+		print(f"{indent*idx}{value}")
+	print("-------------------------")
+
+	#for line in traceback.format_stack():
+	#	print(line.strip())
+
+def whatis(message, backend=True, frontend=True):
+	"""
+	This function can be called to assist in debugging, showing an object's value, type, and call stack.
+	"""
+	inspected_stack = inspect.stack()
+
+	direct_caller = inspected_stack[1]
+	direct_caller_linenum = direct_caller[2]
+
+	parent_caller = inspected_stack[2]
+	parent_caller_function = parent_caller[3]
+	parent_caller_path = parent_caller[1]
+	parent_caller_line = parent_caller[2]
+
+	message_type = str(type(message)).replace('<', '').replace('>', '')
+	msg = f"---> DEBUG (frappe.whatis)\n"
+	msg += f"* Initiated on Line: {direct_caller_linenum}"
+	msg += f"\n  * Value: {message}\n  * Type: {message_type}"
+	msg += f"\n  * Caller: {parent_caller_function}"
+	msg += f"\n  * Caller Path: {parent_caller_path}\n  * Caller Line: {parent_caller_line}\n"
+	if backend:
+		print(msg)
+	if frontend:
+		msg = msg.replace('\n', '<br>')
+		msgprint(msg)
+
+# -------------------
+
+# Datahenge: A lovely little decorator, so I can see what's going on with functions.
+def debug_decorator(func):
+	'''Log the date and time of a function'''
+	from datetime import datetime
+
+	def wrapper(*args, **kwargs):  # pylint: disable=unused-argument
+		print(f'{"-"*30}')
+		print(f'Function: {func.__name__}\nRun on: {datetime.today().strftime("%Y-%m-%d %H:%M:%S")}')
+		stack_inspection = inspect.stack()
+		if len(stack_inspection) >= 1:
+			caller = stack_inspection[1][3]
+		else:
+			caller = None
+		if len(stack_inspection) >= 2:
+			callers_caller = stack_inspection[2][3]
+		else:
+			callers_caller = None
+		print(f"Caller: '{caller}'' via '{callers_caller}'")
+		func(*args, **kwargs)
+		print(f'{"-"*30}')
+	return wrapper
+
+
+# Datahenge: Attempt at a more-flexible print function
+class DEL_YPrintLevel(Enum):
+	Console = 1
+	Web = 2
+	All = 3
+
+
+def DEL_yprint(message, print_level=DEL_YPrintLevel.Console, with_conditions=False, conditions=None):
+	"""
+	Datahenge: a smarter print() function.  Avoids sprinkling IF-ELSE statements in ERPNext code.
+	"""
+
+	if not message:
+		return
+	if not print_level:
+		return
+
+	if isinstance(print_level, str):
+		print_level =DEL_YPrintLevel[print_level]  # convert from String to Enum (JavaScript code may be passing this argument)
+
+	if (with_conditions is True) and not conditions:
+		# Datahenge: Would like to accomplish this with a single variable, but concerned about None and "truthiness"
+		return
+
+	if print_level in (DEL_YPrintLevel.Console, DEL_YPrintLevel.All):
+		print(message)  # print to console
+	if print_level in (DEL_YPrintLevel.Web, DEL_YPrintLevel.All):
+		msgprint(message)  # print to web browser pop-up
+
+
+def DEL_clear_console():
+	os.system('clear')
+	print()  # extra line helps keep statements aligned
