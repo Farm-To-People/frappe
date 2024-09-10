@@ -418,6 +418,7 @@ def check_safe_sql_query(query: str, throw: bool = True) -> bool:
 	query = query.strip().lower()
 	whitelisted_statements = ("select", "explain")
 
+	# TODO: Datahenge : Concerned that Frappe isn't going to allow WITH syntax with PostgreSQL?
 	if query.startswith(whitelisted_statements) or (
 		query.startswith("with") and frappe.db.db_type == "mariadb"
 	):

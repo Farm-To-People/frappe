@@ -365,3 +365,107 @@ def get_address_display_list(doctype: str, name: str) -> list[dict]:
 		a["display"] = get_address_display(a)
 
 	return address_list
+
+# TODO: Add this to FTP App using hooks.py
+# override_doctype_class = {"Address": "erpnext.accounts.custom.address.ERPNextAddress"}
+
+'''
+	# Datahenge
+	def on_update(self):
+		self.update_customer_borough()
+		if bool(self.flags.get("dh_address_skip_orders_cascade", False)):
+			pass
+			# print("Address modified, but will not cascade into Daily Orders, because I was told not to...")
+		else:
+			self.update_daily_orders(verbose=False)
+
+	def update_customer_borough(self):
+		if (self.address_type != "Shipping") or (not self.is_shipping_address):
+			return
+
+		# Find the Customer(s) associated with this Address record.
+		customer_keys = [ link.link_name for link in self.links if link.link_doctype == "Customer"]
+		if not customer_keys:
+			return
+
+		if not self.pincode:
+			return
+
+		postal_code_territory: str = frappe.db.get_value("Postal Code", self.pincode[:5], "territory")  # Customer's address might be a 9-digit Zip.
+
+		for key in customer_keys:
+			doc_customer = frappe.get_doc("Customer", key)
+			if doc_customer.territory != postal_code_territory:  # Territory has changed...
+				doc_customer.territory = postal_code_territory
+				doc_customer.db_update()  # For performance reasons, just edit the field and skip the Controller Methods
+
+	def update_daily_orders(self, verbose=False):
+		"""
+		Apply new Address information to existing Daily Orders.
+		"""
+
+		from temporal import date_to_iso_string
+		from temporal.core import get_system_date
+		from ftp import Checkpoint
+
+		if (self.address_type != "Shipping") or (not self.is_shipping_address):
+			if verbose:
+				frappe.msgprint("Address is not customer's default Shipping Address.  Daily Orders will not be updated.", level='debug')
+			return
+
+		# Find the Customer(s) associated with this Address record.
+		customer_keys = [ link.link_name for link in self.links if link.link_doctype == "Customer"]
+		if not customer_keys:
+			return
+
+		order_address_updated = False
+		tomorrow_date = get_system_date() + timedelta(days=1)
+		tomorrow_date = date_to_iso_string(tomorrow_date)
+		for customer_key in customer_keys:
+			# For each customer found, update the Orders.
+			filters = { "delivery_date": [">=", tomorrow_date],
+			            "customer": customer_key,
+						"is_past_cutoff": False
+			}
+			daily_orders = frappe.get_list("Daily Order", filters=filters, pluck='name')
+			if verbose:
+				print(f"Customer address was modified. Updating {len(daily_orders)} related Daily Orders...")
+				checkpoint = Checkpoint("Address Modified, Update Orders")
+
+			for daily_order in daily_orders:
+				doc_daily_order = frappe.get_doc("Daily Order", daily_order)
+				doc_daily_order.set_default_address()
+				doc_daily_order.save()  # January 5th 2023 : Change from db_update() to save(), to ensure that Shipping Rule is recalculated.
+				order_address_updated = True
+				if verbose:
+					print(f"Customer account Shipping address was modified: updated related Daily Order {daily_order}")
+
+			if verbose:
+				checkpoint.elapsed()
+
+		if order_address_updated:
+			frappe.msgprint("\u2713 Updated shipping address on non-cutoff Daily Orders.")
+
+	# End Datahenge Custom Functions
+
+
+	def check_for_blocked_address(self):
+		# Filter through the address doctype to check for address with the same info
+		blocked_address = frappe.get_all (
+			"Address",
+			filters = {
+				"address_line1": self.address_line1,
+				"address_line2": self.address_line2,
+				"city": self.city,
+				"state": self.state,
+				"pincode": self.pincode,
+				"address_type": "Blocked (Do Not Ship)"
+			},
+			pluck = "name"
+		)
+
+		if blocked_address:
+			frappe.throw("The shipping address for this order is marked as 'Blocked (Do Not Ship)")
+
+
+'''

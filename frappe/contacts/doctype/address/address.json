@@ -24,6 +24,9 @@
   "is_primary_address",
   "is_shipping_address",
   "disabled",
+  "coordinates",
+  "latitude",
+  "longitude",
   "linked_with",
   "links"
  ],
@@ -44,7 +47,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Address Type",
-   "options": "Billing\nShipping\nOffice\nPersonal\nPlant\nPostal\nShop\nSubsidiary\nWarehouse\nCurrent\nPermanent\nOther",
+   "options": "Billing\nShipping\nOffice\nPersonal\nPlant\nPostal\nShop\nSubsidiary\nWarehouse\nCurrent\nPermanent\nOther\nRemit To\nDNU (Do Not Use)\nBlocked (Do Not Ship)",
    "reqd": 1
   },
   {
@@ -145,12 +148,29 @@
    "fieldtype": "Table",
    "label": "Links",
    "options": "Dynamic Link"
+  },
+  {
+	"fieldname": "coordinates",
+	"fieldtype": "Heading",
+	"label": "Coordinates"
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "9"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "9"
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2023-11-20 17:28:41.698356",
+ "modified": "2024-09-08 17:28:41.698356",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",

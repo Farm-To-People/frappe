@@ -50,6 +50,7 @@
   "bypass_2fa_for_retricted_ip_users",
   "bypass_restrict_ip_check_if_2fa_enabled",
   "two_factor_method",
+  "enqueue_otp_email",
   "lifespan_qrcode_image",
   "otp_issuer_name",
   "password_tab",
@@ -677,6 +678,14 @@
    "fieldname": "default_app",
    "fieldtype": "Select",
    "label": "Default App"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.enable_two_factor_auth == true && doc.two_factor_method == \"Email\"",
+   "description": "If marked, emails containing OTP are placed in the 'short' queue for processing. Otherwise, emails are transmitted immediately.",
+   "fieldname": "enqueue_otp_email",
+   "fieldtype": "Check",
+   "label": "Enqueue OTP Email"
   }
  ],
  "icon": "fa fa-cog",

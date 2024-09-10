@@ -671,7 +671,16 @@ class DocType(Document):
 		# move files
 		new_path = get_doc_path(self.module, "doctype", new)
 		old_path = get_doc_path(self.module, "doctype", old)
-		shutil.move(old_path, new_path)
+
+		# Farm To People (via Datahenge)
+		# Brian: This extra validation helps resolve issues that felt like race conditions.
+		import pathlib
+		new_path = pathlib.Path(new_path)
+		old_path = pathlib.Path(old_path)
+		if (old_path.exists()) and (not new_path.exists()):
+			print(f"Moving directory '{old_path}' to '{new_path}'")
+			shutil.move(old_path, new_path)
+		# EOM
 
 		# rename files
 		for fname in os.listdir(new_path):
@@ -1250,7 +1259,8 @@ def validate_fields(meta: Meta):
 		validate_column_length(fieldname)
 
 	def check_illegal_mandatory(docname, d):
-		if (d.fieldtype in no_value_fields) and d.fieldtype not in table_fields and d.reqd:
+		# Datahenge: Also include new option 'reqd_in_database'
+		if (d.fieldtype in no_value_fields) and d.fieldtype not in table_fields and (d.reqd or d.reqd_in_database):
 			frappe.throw(
 				_("{0}: Field {1} of type {2} cannot be mandatory").format(docname, d.label, d.fieldtype),
 				IllegalMandatoryError,
@@ -1369,8 +1379,9 @@ def validate_fields(meta: Meta):
 			d.unique = 0
 			d.search_index = 0
 
+		# Datahenge: Allow for Date and Select datatypes to also be enforced as unique!
 		if getattr(d, "unique", False):
-			if d.fieldtype not in ("Data", "Link", "Read Only", "Int"):
+			if d.fieldtype not in ("Data", "Link", "Read Only", "Int", "Date", "Select"):
 				frappe.throw(
 					_("{0}: Fieldtype {1} for {2} cannot be unique").format(docname, d.fieldtype, d.label),
 					NonUniqueError,
@@ -1753,6 +1764,8 @@ def validate_permissions(doctype, for_remove=False, alert=False):
 					d.set(invalid, 0)
 
 	def check_permission_dependency(d):
+
+		# TODO: Datahenge: Would be nice to have the option to Cancel a Document, even if it's not Submittable.
 		if d.cancel and not d.submit:
 			frappe.throw(_("{0}: Cannot set Cancel without Submit").format(get_txt(d)))
 
@@ -1851,6 +1864,11 @@ def make_module_and_roles(doc, perm_fieldname="permissions"):
 				r.desk_access = 1
 				r.flags.ignore_mandatory = r.flags.ignore_permissions = True
 				r.insert()
+	# Datahenge: This helps when you rename Modules, and not everything is cleaned up.
+	except KeyError as e:
+		print(f"Key error for doc '{doc}', module '{doc.module}', app '{m.app_name}'")
+		raise e
+	# EOM
 	except frappe.DoesNotExistError:
 		pass
 	except frappe.db.ProgrammingError as e:

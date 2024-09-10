@@ -52,6 +52,7 @@
   "show_title_field_in_link",
   "translated_doctype",
   "search_fields",
+  "disable_printing",
   "default_print_format",
   "sort_field",
   "sort_order",
@@ -194,10 +195,12 @@
   },
   {
    "default": "0",
+   "description": "When marked, the web UI mentions this feature is experimental.",   
    "depends_on": "eval:!doc.istable",
    "fieldname": "beta",
    "fieldtype": "Check",
-   "label": "Beta"
+   "label": "Beta",
+   "read_only": 1
   },
   {
    "fieldname": "fields",
@@ -317,7 +320,8 @@
    "fieldname": "title_field",
    "fieldtype": "Data",
    "label": "Title Field",
-   "mandatory_depends_on": "eval:doc.show_title_field_in_link"
+   "mandatory_depends_on": "eval:doc.show_title_field_in_link",
+   "description": "This value will appear below `name` in drop-down lists.<br>\nIt <b>also</b> replaces 'name' as the left-most column on List Grids.<br>\nIt **also** forces this DocField to appear as a Standard Filter."
   },
   {
    "depends_on": "eval:!doc.istable",
@@ -560,6 +564,13 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "0",
+   "description": "Disable all printing, regardless of Role Permissions.",
+   "fieldname": "disable_printing",
+   "fieldtype": "Check",
+   "label": "Disable Printing"
+  },
+  {
    "depends_on": "has_web_view",
    "fieldname": "website_search_field",
    "fieldtype": "Data",
@@ -750,7 +761,7 @@
    "link_fieldname": "reference_doctype"
   }
  ],
- "modified": "2023-12-01 18:37:16.799471",
+ "modified": "2024-09-01 18:37:16.799471",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocType",

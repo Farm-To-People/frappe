@@ -616,6 +616,9 @@ class CustomizeForm(Document):
 
 	@frappe.whitelist()
 	def reset_to_defaults(self):
+		"""
+		This function resets a DocType's customizations back to the official, default values per JSON.
+		"""		
 		if not self.doc_type:
 			return
 
@@ -673,6 +676,9 @@ def get_orphaned_columns(doctype: str):
 
 
 def reset_customization(doctype):
+	"""
+	This function resets a DocType's customizations back to the official, default values per JSON.
+	"""	
 	setters = frappe.get_all(
 		"Property Setter",
 		filters={

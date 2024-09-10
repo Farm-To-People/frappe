@@ -17,6 +17,7 @@ from frappe.utils.csvutils import validate_google_sheets_url
 
 BLOCKED_DOCTYPES = set(core_doctypes_list) - {"User", "Role"}
 
+# TODO: Datahenge : In V13 I wanted to add third option for Import Type, that Truncates the table first.  Does V15 already do this?
 
 class DataImport(Document):
 	# begin: auto-generated types

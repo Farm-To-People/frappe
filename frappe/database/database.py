@@ -49,6 +49,13 @@ MULTI_WORD_PATTERN = re.compile(r'([`"])(tab([A-Z]\w+)( [A-Z]\w+)+)\1')
 
 SQL_ITERATOR_BATCH_SIZE = 100
 
+# Datahenge - For debugging
+import os
+from frappe.database.datahenge import SQLTransaction
+NoneType = type(None)
+env_value = os.environ.get('FTP_DEBUG_SQL_TRANSACTIONS')
+debug_mode = bool(env_value and int(env_value) == 1)
+# EOM
 
 class Database:
 	"""
@@ -434,7 +441,7 @@ class Database:
 			and query
 			and is_query_type(query, ("start", "alter", "drop", "create", "begin", "truncate"))
 		):
-			raise ImplicitCommitError("This statement can cause implicit commit")
+			raise ImplicitCommitError(f"This statement can cause implicit commit: {query}")  # Datahenge: Show the statement
 
 	def fetch_as_dict(self, result) -> list[frappe._dict]:
 		"""Internal. Convert results to dict."""
@@ -849,8 +856,14 @@ class Database:
 
 		return val
 
+	@frappe.debug_decorator
 	def get_singles_value(self, *args, **kwargs):
 		"""Alias for get_single_value"""
+		# Datahenge: No purpose having an alias, and it's rarely used.
+		import warnings
+		message = "Function 'get_singles_value' is deprecated, using 'get_single_value' instead."
+		frappe.throw(message, exc=None)
+		warnings.warn(message, DeprecationWarning)		
 		return self.get_single_value(*args, **kwargs)
 
 	def _get_values_from_table(
@@ -1025,18 +1038,58 @@ class Database:
 		return defaults.get(frappe.scrub(key))
 
 	def begin(self, *, read_only=False):
+		"""
+		Start a new SQL transaction.
+		If a SQL Transaction already exists, it -automatically- committed (MySQL behavior) and a new Transaction created.
+		"""
+		if debug_mode:
+			if SQLTransaction.exist_uncommitted_changes():
+				frappe.whatis("WARNING: Implicit SQL Commit (calling db.begin() when already inside a SQL Transaction)")
+			# Datahenge: This thread variable allows me to bypass Frappe/ERPNext code that performs implicit commits, via begin().
+			if hasattr(frappe.local, "dh_ignore_implicit_transactions") and frappe.local.dh_ignore_implicit_transactions:
+				raise RuntimeError("ERROR: Skipping db.begin() because it would implicitly commit changes to the database, and variable 'frappe.local.dh_ignore_implicit_transactions' is already set.")
+
 		read_only = read_only or frappe.flags.read_only
 		mode = "READ ONLY" if read_only else ""
 		self.sql(f"START TRANSACTION {mode}")
 
-	def commit(self):
+	def commit(self, end_rollback=False):
 		"""Commit current transaction. Calls SQL `COMMIT`."""
+
+		# Datahenge:  MySQL has no concept of nested transactions.  You're either inside a transaction, or you're not.
+		# Furthermore, certain statements like 'START TRANSACTION' will *implicitly* perform a commit.
+		#
+		# Rollbacks and nesting are left to the application developer to design.  This presents an interesting
+		# challenge with ERPNext:
+		#
+		# "When I -want- the option to rollback over many statements, how do I prevent
+		# standard ERP code from performing a db.begin() or db.commit() and thwarting my efforts?"
+		#
+		if debug_mode:
+			if not SQLTransaction.in_transaction():
+				frappe.whatis("WARNING: Pointless call to db.commit(); no SQL Transaction exists.")
+			elif not SQLTransaction.exist_uncommitted_changes():
+				frappe.whatis("WARNING: Pointless call to db.commit(); there are no uncommitted SQL changes.")
+			# SQLTransaction.give_commit_advice()  # Datahenge function.
+
+		# SQL Changes are about to be committed.
+		if hasattr(frappe.local, 'dh_ignore_implicit_transactions') and frappe.local.dh_ignore_implicit_transactions:
+			frappe.whatis("---> INFO: Ignoring non-Datahenge SQL commits.")
+			# Datahenge: This gives us the possibility of -ignoring- what Frappe/ERPNext is doing, and wait for our own, explicit commit.
+			if not end_rollback:
+				print("WARNING: Skipping db.commit() because we're in a Datahenge Rollback Option, and argument 'end_rollback' was not passed.")
+				return
+
+
 		self.before_rollback.reset()
 		self.after_rollback.reset()
 
 		self.before_commit.run()
 
 		self.sql("commit")
+		if debug_mode:
+			frappe.whatis("--> SQL COMMIT (Releasing Row Locks)")
+
 		self.begin()  # explicitly start a new transaction
 
 		self.after_commit.run()
@@ -1167,6 +1220,11 @@ class Database:
 
 	def get_db_table_columns(self, table) -> list[str]:
 		"""Returns list of column names from given table."""
+
+		# Datahenge: Limit to current database.
+		# WHERE TABLE_SCHEMA = %(database_name)s 
+		# AND table_name = %(table)s ''', values={"database_name": frappe.db.db_name, "table": table})]
+
 		columns = frappe.cache.hget("table_columns", table)
 		if columns is None:
 			information_schema = frappe.qb.Schema("information_schema")

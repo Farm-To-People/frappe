@@ -47,7 +47,8 @@ frappe.ui.form.on("DocType", {
 			}
 			frm.toggle_enable("custom", 0);
 			frm.toggle_enable("is_virtual", 0);
-			frm.toggle_enable("beta", 0);
+			// Datahenge: No idea what we need to have 'beta' things.
+			// frm.toggle_enable("beta", 0);
 		}
 
 		if (!frm.is_new() && !frm.doc.istable) {
@@ -92,9 +93,10 @@ frappe.ui.form.on("DocType", {
 		}
 
 		// set label for "In List View" for child tables
+		// Datahenge: Not sure we really need to change the names of things just because it's a Child DocType; but leaving it for now. <shrug>
 		frm.get_docfield("fields", "in_list_view").label = frm.doc.istable
-			? __("In Grid View")
-			: __("In List View");
+			? __("In List View")
+			: __("In Grid View");
 
 		frm.cscript.autoname(frm);
 		frm.cscript.set_naming_rule_description(frm);

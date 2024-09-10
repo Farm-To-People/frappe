@@ -69,6 +69,7 @@ class CommunicationEmailMixin:
 
 		cc = self.cc_list()
 
+		# Datahenge: I "believe" this replaces my V13 modification in email.py, related to frappe.session.user being added to CC
 		if include_sender:
 			sender = self.sender_mailid
 			# if user has selected send_me_a_copy, use their email as sender

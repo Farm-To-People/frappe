@@ -39,6 +39,13 @@ def handle_rpc_call(method: str):
 def create_doc(doctype: str):
 	data = get_request_form_data()
 	data.pop("doctype", None)
+
+	# Farm To People, Datahenge
+	# Hard to believe this is not standard code.  During POST, if a 'name' is passed,
+	# but a record with that name already exists?  Throw an Error.
+	if 'name' in data and frappe.db.exists(doctype, data['name']):
+		raise frappe.NameError(f"API Error: Calling POST with a 'name' value ({data['name']}) that already exists.")
+	# End of Fix
 	return frappe.new_doc(doctype, **data).insert()
 
 

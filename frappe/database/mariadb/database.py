@@ -448,6 +448,11 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 
 	def get_tables(self, cached=True):
 		"""Returns list of tables"""
+
+		# Datahenge: What if I only care about the tables in the active database?
+		# AND TABLE_SCHEMA = %(database_name)s
+		#	""", values={"database_name": frappe.db.db_name})
+
 		to_query = not cached
 
 		if cached:

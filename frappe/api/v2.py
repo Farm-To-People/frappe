@@ -10,13 +10,16 @@ Note:
 import json
 from typing import Any
 
+from six import iteritems
 from werkzeug.routing import Rule
 
 import frappe
 import frappe.client
-from frappe import _, get_newargs, is_whitelisted
+from frappe import _, get_newargs, is_whitelisted, Document as DocumentType
 from frappe.core.doctype.server_script.server_script_utils import get_server_script_map
 from frappe.handler import is_valid_http_method, run_server_script, upload_file
+from frappe.utils.response import build_response
+
 
 PERMISSION_MAP = {
 	"GET": "read",
@@ -91,6 +94,12 @@ def count(doctype: str) -> int:
 def create_doc(doctype: str):
 	data = frappe.form_dict
 	data.pop("doctype", None)
+	# Farm To People, Datahenge
+	# Hard to believe this is not standard code.  During POST, if a 'name' is passed,
+	# but a record with that name already exists?  Throw an Error.
+	if 'name' in data and frappe.db.exists(doctype, data['name']):
+		raise frappe.NameError(f"API Error: Calling POST with a 'name' value ({data['name']}) that already exists.")
+	# End of Fix
 	return frappe.new_doc(doctype, **data).insert()
 
 
@@ -99,6 +108,9 @@ def update_doc(doctype: str, name: str):
 
 	doc = frappe.get_doc(doctype, name, for_update=True)
 	data.pop("flags", None)
+
+	if not can_update_dh(doc, new_data=data):
+		return build_response("json")
 	doc.update(data)
 	doc.save()
 
@@ -185,6 +197,47 @@ def run_doc_method(method: str, document: dict[str, Any] | str, kwargs=None):
 	frappe.response.docs.append(doc)  # send modified document and result both.
 	return response
 
+
+def can_update_dh(doc, new_data):
+	"""
+	Datahenge: Logic to be called during a PUT, to prevent updating of Read Only fields.
+	"""
+
+	# Arguments:
+		# doc: 			Document attempting to modify.
+		# new_data		a Frappe Dictionary of new values.
+
+	if not isinstance(doc, DocumentType):
+		raise TypeError("Argument 'doc' is not an instance of Document.")
+
+	meta = frappe.get_meta(doc.doctype, cached=False)
+	docfield_meta = meta.get("fields")  # a List of DocField
+
+	# Concept: If nothing in the payload is a CRUD, don't bother with the PUT
+	payload_contains_changes = False  # pylint: disable=unused-variable
+
+	for key, new_value in iteritems(new_data):
+		current_value = doc.get(key)
+		if new_value != current_value:
+			payload_contains_changes = True
+			# print(f"Attempting to change value of {key} from '{current_value}' to '{new_value}'")
+			try:
+				docfield = next(field for field in docfield_meta if field.fieldname == key)
+			except StopIteration as ex:
+				raise ValueError(f"No such field '{key}' exists in document {doc.doctype}.") from ex
+
+			# If trying a PUT on a read-only field, throw an error.
+			if docfield.fieldtype == 'Read Only':
+				raise frappe.MethodNotAllowed(f"Cannot modify the value of a 'Read Only' column '{key}' via API PUT.")
+			if bool(docfield.read_only) is True:
+				raise frappe.MethodNotAllowed(f"Cannot modify the value of a 'read_only' column '{key}' via API PUT.")
+
+	# TODO: Not 100% confident this is safe, when it comes to complex PUT payloads
+	#if not payload_contains_changes:
+	#	print("FYI, payload of PUT contains no changes to data.")
+	#	return False
+
+	return True
 
 url_rules = [
 	# RPC calls

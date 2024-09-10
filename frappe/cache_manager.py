@@ -43,6 +43,7 @@ global_cache_keys = (
 	"information_schema:counts",
 	"db_tables",
 	"server_script_autocompletion_items",
+	"dh_dynamic_link_map",  # Datahenge addition
 	*doctype_map_keys,
 )
 
@@ -93,10 +94,10 @@ def clear_user_cache(user=None):
 		for name in user_cache_keys:
 			frappe.cache.delete_key(name)
 		clear_defaults_cache()
-		clear_global_cache()
+		clear_global_cache() # TODO: DATAHENGE: I don't why a function 'clear_user_cache()' should (sometimes) implicitly destroy the Global Cache.
 
 
-def clear_domain_cache(user=None):
+def clear_domain_cache(user=None):  # DATAHENGE: Unused argument, what's the point?
 	domain_cache_keys = ("domain_restricted_doctypes", "domain_restricted_pages")
 	frappe.cache.delete_value(domain_cache_keys)
 
@@ -200,6 +201,9 @@ def build_table_count_cache():
 	table_rows = frappe.qb.Field("table_rows").as_("count")
 	information_schema = frappe.qb.Schema("information_schema")
 
+	# TODO: Datahenge, limit the results to the current Site database only!
+	# database_name = frappe.db.db_name
+	# WHERE TABLE_SCHEMA = '{database_name}'
 	data = (frappe.qb.from_(information_schema.tables).select(table_name, table_rows)).run(as_dict=True)
 	counts = {d.get("name").replace("tab", "", 1): d.get("count", None) for d in data}
 	frappe.cache.set_value("information_schema:counts", counts)

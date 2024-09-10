@@ -306,7 +306,7 @@ def make_form_dict(request: Request):
 	elif isinstance(args, list):
 		frappe.local.form_dict["data"] = args
 	else:
-		frappe.throw(_("Invalid request arguments"))
+		frappe.throw(_(f"Invalid request arguments: {args}"))  # Datahenge: Share those arguments to make troubleshooting easier
 
 
 def handle_exception(e):
