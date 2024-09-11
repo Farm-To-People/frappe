@@ -222,6 +222,9 @@ def clear_default(key=None, value=None, parent=None, name=None, parenttype=None)
 
 	frappe.db.delete("DefaultValue", filters)
 
+	# Datahenge: Warn about how calling '_clear_cache()' without a parent will also destroy the Global Cache data.
+	if not parent:
+		print("WARNING: Global Cache is being destroyed by defaults.clear_default()")
 	_clear_cache(parent)
 
 

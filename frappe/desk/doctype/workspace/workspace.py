@@ -89,11 +89,13 @@ class Workspace(Document):
 
 	def on_update(self):
 		if disable_saving_as_public():
+			frappe.msgprint("Workspace changes will not be written to disk. (disable_saving_as_public)")
 			return
 
 		if frappe.conf.developer_mode and self.public:
 			if self.module:
 				export_to_files(record_list=[["Workspace", self.name]], record_module=self.module)
+				frappe.msgprint("Saved changes to JSON file on disk.")
 
 			if self.has_value_changed("title") or self.has_value_changed("module"):
 				previous = self.get_doc_before_save()

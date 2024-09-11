@@ -52,3 +52,10 @@ def frequently_visited_links():
 		order_by="count desc",
 		limit=5,
 	)
+
+# Datahenge:
+def on_doctype_update():
+	"""
+	Create additional indexes and constraints
+	"""
+	frappe.db.add_index("Route History", ["user", "route"], index_name="user_route_idx")
