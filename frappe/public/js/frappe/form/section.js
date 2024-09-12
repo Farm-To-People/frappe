@@ -51,6 +51,11 @@ export default class Section {
 			if (this.df.hide_border) {
 				this.wrapper.toggleClass("hide-border", true);
 			}
+			// Datahenge: Add the ability to give HTML elements an ID (seems like a huge gap without this capability)
+			if (this.df.id) {
+				this.wrapper.attr("id", this.df.id);  // wrapper is some kind of JQuery object.
+			}
+			// End Datahenge
 		}
 
 		this.body = $('<div class="section-body">').appendTo(this.wrapper);

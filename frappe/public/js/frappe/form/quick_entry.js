@@ -121,6 +121,14 @@ frappe.ui.form.QuickEntryForm = class QuickEntryForm {
 				},
 			].concat(this.mandatory);
 		}
+		// Datahenge: Otherwise, get rid of the new __newname field:
+		else {
+			console.log("Removing unnecessary '__newname' field ...");
+			this.mandatory = this.mandatory.filter(function( obj ) {
+				return obj.fieldname !== '__newname';
+			});
+		}
+		// Datahenge End
 	}
 
 	render_dialog() {

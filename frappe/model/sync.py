@@ -37,6 +37,11 @@ IMPORTABLE_DOCTYPES = [
 
 
 def sync_all(force=0, reset_permissions=False):
+	"""
+	Synchronize DocType and DocFields from JSON text files to database.
+	By default, permissions will be synced only if none exist.
+	"""
+
 	_patch_mode(True)
 
 	for app in frappe.get_installed_apps():

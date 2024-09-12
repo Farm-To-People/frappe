@@ -94,7 +94,9 @@ class SMTPServer:
 			self._enqueue_connection_closure()
 			return self._session
 
-		except smtplib.SMTPAuthenticationError:
+		except smtplib.SMTPAuthenticationError as ex:
+			# Datahenge: Why throw away the Exception?  :facepalm:
+			print(f"Function session().  SMTPAuthenticationError = {ex}")
 			self.throw_invalid_credentials_exception()
 
 		except OSError as e:

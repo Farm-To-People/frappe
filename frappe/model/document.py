@@ -32,6 +32,9 @@ if TYPE_CHECKING:
 DOCUMENT_LOCK_EXPIRTY = 12 * 60 * 60  # All locks expire in 12 hours automatically
 DOCUMENT_LOCK_SOFT_EXPIRY = 60 * 60  # Let users force-unlock after 60 minutes
 
+DEBUG_ENV_VARIABLE="FTP_DEBUG_DOCUMENT"  # Datahenge: if this OS environment variable = 1, then dprint() messages will print to stdout.
+from datetime import date as date_type
+
 
 def get_doc(*args, **kwargs):
 	"""returns a frappe.model.Document object.
@@ -73,6 +76,10 @@ def get_doc(*args, **kwargs):
 
 		else:
 			raise ValueError("First non keyword argument must be a string or dict")
+
+		# Datahenge: It's possible to make a Date the primary key (name) of a DocType.  When doing so, make sure to call with strings.
+		if (len(args) > 1) and isinstance(args[1], date_type):
+			raise ValueError('When calling get_doc(), second non keyword argument cannot be a Date object (just use an ISO String instead)')
 
 	if len(args) < 2 and kwargs:
 		if "doctype" in kwargs:
@@ -124,6 +131,7 @@ class Document(BaseDocument):
 				# since it is used in virtual doctypes and inherited in child classes
 				self.flags.for_update = kwargs.get("for_update")
 				self.load_from_db()
+				# Datahenge: Would be lovely to set the 'parent_doc' here, but we run into infinite recursion  :/
 				return
 
 			if isinstance(args[0], dict):
@@ -135,6 +143,11 @@ class Document(BaseDocument):
 			super().__init__(kwargs)
 			self.init_child_tables()
 			self.init_valid_columns()
+			# Datahenge: Would be lovely to set the 'parent_doc' here, but we run into infinite recursion  :/
+			# if self.parent and self.doctype not in ["DocField","DocPerm","DocType Link","Has Role",
+			#                                       "Custom DocPerm","DocType Action"]:
+				# self.set_parent_doc()
+
 
 		else:
 			# incorrect arguments. let's not proceed.
@@ -169,6 +182,8 @@ class Document(BaseDocument):
 			)
 
 			if not d:
+				# TODO: Find a way to prevent this from throwing, when purposely
+				# Doing a try/catch maneuver, to prevent 2 SQL calls (exists + get_doc)
 				frappe.throw(
 					_("{0} {1} not found").format(_(self.doctype), self.name), frappe.DoesNotExistError
 				)
@@ -208,6 +223,28 @@ class Document(BaseDocument):
 		"""Reload document from database"""
 		return self.load_from_db()
 
+	def reload_child_table(self, docfield_fieldname):
+		"""
+		Datahenge: What if I want to reread just a Child table from SQL, without rereading all
+		the other DocFields on this Doctype?
+
+		Now, I think can...
+		"""
+		try:
+			df = next(iter([ table_field for table_field in self.meta.get_table_fields()
+			                 if table_field.fieldname == docfield_fieldname]))
+		except StopIteration as ex:
+			raise ValueError(f"DocType '{self.name}' does not have a Table field named '{docfield_fieldname}'") from ex
+
+		children = frappe.db.get_values(df.options,
+			{"parent": self.name, "parenttype": self.doctype, "parentfield": df.fieldname},
+			"*", as_dict=True, order_by="idx asc")
+		if children:
+			self.set(df.fieldname, children)
+		else:
+			self.set(df.fieldname, [])
+
+
 	def get_latest(self):
 		if not getattr(self, "_doc_before_save", None):
 			self.load_doc_before_save()
@@ -236,7 +273,7 @@ class Document(BaseDocument):
 	def raise_no_permission_to(self, perm_type):
 		"""Raise `frappe.PermissionError`."""
 		frappe.flags.error_message = (
-			_("Insufficient Permission for {0}").format(self.doctype) + f" ({frappe.bold(_(perm_type))})"
+			_("Insufficient Permission for DocType = {0}").format(self.doctype) + f" ({frappe.bold(_(perm_type))})"  # DH - Be clear we're talking about a DocType
 		)
 		raise frappe.PermissionError
 
@@ -280,6 +317,7 @@ class Document(BaseDocument):
 		self.set_user_and_timestamp()
 		self.set_docstatus()
 		self.check_if_latest()
+		self._prevalidate_links()	# TODO: Do we still need this??  Datahenge, need a means of running some additional code first.
 		self._validate_links()
 		self.check_permission("create")
 		self.run_method("before_insert")
@@ -288,8 +326,9 @@ class Document(BaseDocument):
 		self.validate_higher_perm_levels()
 
 		self.flags.in_insert = True
-		self.run_before_save_methods()
-		self._validate()
+		self.run_before_validate_methods()  # Datahenge: New function.
+		self._validate()  # Frappe had this 2nd, but I want it to run 1st
+		self.run_before_save_methods()  # Frappe had this 1st, but I want it to run 2nd
 		self.set_docstatus()
 		self.flags.in_insert = False
 
@@ -368,12 +407,25 @@ class Document(BaseDocument):
 		self.set_parent_in_children()
 		self.set_name_in_children()
 
-		self.validate_higher_perm_levels()
-		self._validate_links()
-		self.run_before_save_methods()
+		self.validate_higher_perm_levels()  # DH: This function modified.
+		self._prevalidate_links()	# DH: Need to introduce a way of running Document-based code, prior to Link validation.		
+		self._validate_links()  # DH: Note this call also validates the Links of -child- documents.
+		# --------
+		# Datahenge:
+		# --------
+		# I have deliberately switched the positions of:
+		# 		run_before_save_methods()
+		# 		_self._validate()
+  		#
+		# Why?  Because it's crazy otherwise.  Validate() would be called before any
+		# Link Validation or Mandatory fields were checked!  Your custom Controller code could be dealing with
+		# unexpected NULLs, or broken links.
 
+		self.run_before_validate_methods()  # Datahenge: before_validate() must happen early.
+		
 		if self._action != "cancel":
-			self._validate()
+			self._validate()  # Notice the underscore!  This will call useful validations like Links and Mandatory fields.
+		self.run_before_save_methods()  # Now it's finally time to call this.  This calls Document-specific Controller Methods, like validate()
 
 		if self._action == "update_after_submit":
 			self.validate_update_after_submit()
@@ -426,6 +478,7 @@ class Document(BaseDocument):
 		all_rows = self.get(df.fieldname)
 
 		# delete rows that do not match the ones in the document
+		# Datahenge:  A better explanation is 'Delete rows that no longer exist in the document.'
 		# if the doctype isn't in ignore_children_type flag and isn't virtual
 		if not (
 			df.options in (self.flags.ignore_children_type or ())
@@ -455,11 +508,19 @@ class Document(BaseDocument):
 	def get_doc_before_save(self) -> "Document":
 		return getattr(self, "_doc_before_save", None)
 
-	def has_value_changed(self, fieldname):
+	def has_value_changed(self, fieldname, ignore_new=False, debug=False):
 		"""Return True if value has changed before and after saving."""
+		# Datahenge : Add the ability to ignore new records.
 		from datetime import date, datetime, timedelta
 
 		previous = self.get_doc_before_save()
+
+		# DH Begin
+		if ignore_new and (not previous):
+			return False
+		if debug:
+			print(f"has_value_changed() Before: {previous.get(fieldname)}, After: {self.get(fieldname)}")
+		# DH End
 
 		if not previous:
 			return True
@@ -571,6 +632,7 @@ class Document(BaseDocument):
 			d.docstatus = self.docstatus
 
 	def _validate(self):
+		self.load_doc_before_save()  # Datahenge: Moving here to ensure it's always called.
 		self._validate_mandatory()
 		self._validate_data_fields()
 		self._validate_selects()

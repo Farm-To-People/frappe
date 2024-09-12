@@ -399,8 +399,12 @@ class DatabaseQuery:
 			"global",
 		]
 
-		def _raise_exception():
-			frappe.throw(_("Use of sub-query or function is restricted"), frappe.DataError)
+		#def _raise_exception():
+		#	frappe.throw(_("Use of sub-query or function is restricted"), frappe.DataError)
+
+		# Datahenge: Include a 'reason' for the exception.
+		def _raise_exception(reason=None):
+			frappe.throw(_(f"Use of sub-query or function is restricted: {reason})"), frappe.DataError)
 
 		def _is_query(field):
 			if IS_QUERY_PATTERN.match(field):
@@ -416,7 +420,7 @@ class DatabaseQuery:
 				if lower_field[0] == "(":
 					subquery_token = lower_field[1:].lstrip().split(" ", 1)[0]
 					if subquery_token in blacklisted_keywords:
-						_raise_exception()
+						_raise_exception(f"keyword found in blacklisted_keywords: {blacklisted_keywords}")
 
 				function = lower_field.split("(", 1)[0].rstrip()
 				if function in blacklisted_functions:
@@ -426,7 +430,7 @@ class DatabaseQuery:
 
 				if "@" in lower_field:
 					# prevent access to global variables
-					_raise_exception()
+					_raise_exception("Use of the @ symbol")
 
 			if FIELD_QUOTE_PATTERN.match(field):
 				_raise_exception()

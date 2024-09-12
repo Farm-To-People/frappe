@@ -307,3 +307,15 @@ class CommandFailedError(Exception):
 		super().__init__(message)
 		self.out = out
 		self.err = err
+
+# Datahenge Exceptions
+# TODO: Can I move these to another App instead of Frappe App?
+class Forbidden(Exception):
+	"""
+	Used to indicate a function or logic path is explicitly forbidden, for some reason the developer should indicate.
+	"""
+	http_status_code = 403
+
+class MethodNotAllowed(ValidationError):
+	# Datahenge: Use case is performing a PUT against a read-only field
+	http_status_code = 405

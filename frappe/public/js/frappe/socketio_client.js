@@ -142,7 +142,7 @@ class RealTimeClient {
 	}
 	doc_subscribe(doctype, docname) {
 		if (frappe.flags.doc_subscribe) {
-			console.log("throttled");
+			console.log("doc_subscribe() -> throttled");  // Because 'throttled' by itself wasn't sufficient to help troubleshooting
 			return;
 		}
 		if (this.open_docs.has(`${doctype}:${docname}`)) {

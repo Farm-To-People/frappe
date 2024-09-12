@@ -33,6 +33,11 @@ dateformats = {
 
 
 def user_to_str(date, date_format=None):
+	# Datahenge: The name of this function is awful.  And no inline documentation to explain the point of it.
+
+	if not isinstance(date, str):	# Datahenge: Added to prevent bad argument types
+		raise TypeError("Function user_to_str() expects an argument 'date' of type String.")
+
 	if not date:
 		return date
 

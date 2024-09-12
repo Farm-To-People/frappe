@@ -101,7 +101,9 @@ def get_pdf(html, options=None, output: PdfWriter | None = None):
 			if output:
 				output.append_pages_from_reader(reader)
 		else:
-			raise
+			# The official Frappe code was just throwing away the exception.
+			print(f"Unhandled exception in get_pdf(): {e}")  # Datahenge: Provide more feedback on why there was an error.
+			raise e
 	finally:
 		cleanup(options)
 
@@ -152,10 +154,10 @@ def prepare_options(html, options):
 	)
 
 	if not options.get("margin-right"):
-		options["margin-right"] = "15mm"
+		options["margin-right"] =  options.get("margin", "15mm")  # DH - Made this a bit better
 
 	if not options.get("margin-left"):
-		options["margin-left"] = "15mm"
+		options["margin-left"] =  options.get("margin", "15mm")  # DH - Made this a bit better
 
 	html, html_options = read_options_from_html(html)
 	options.update(html_options or {})

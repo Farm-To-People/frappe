@@ -176,6 +176,14 @@ frappe.ui.form.ControlData = class ControlData extends frappe.ui.form.ControlInp
 	}
 	setup_autoname_check() {
 		if (!this.df.parent) return;
+
+		// Datahenge: Using this to disable automatic checking of names for duplicates.
+		// 1. Sometimes it's just unnecessary and unwanted.
+		// 2. It also harms performance, by spamming the Web Server and DB with queries for every, single character typed.
+		if (this.frm && this.frm.disable_autoname_check) {
+			return;
+		}
+
 		this.meta = frappe.get_meta(this.df.parent);
 		if (
 			this.meta &&

@@ -15,7 +15,7 @@ from werkzeug.routing import Rule
 
 import frappe
 import frappe.client
-from frappe import _, get_newargs, is_whitelisted, Document as DocumentType
+from frappe import _, get_newargs, is_whitelisted
 from frappe.core.doctype.server_script.server_script_utils import get_server_script_map
 from frappe.handler import is_valid_http_method, run_server_script, upload_file
 from frappe.utils.response import build_response
@@ -206,7 +206,7 @@ def can_update_dh(doc, new_data):
 	# Arguments:
 		# doc: 			Document attempting to modify.
 		# new_data		a Frappe Dictionary of new values.
-
+	from frappe import Document as DocumentType
 	if not isinstance(doc, DocumentType):
 		raise TypeError("Argument 'doc' is not an instance of Document.")
 

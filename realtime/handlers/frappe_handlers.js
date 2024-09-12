@@ -46,6 +46,7 @@ function frappe_handlers(realtime, socket) {
 	});
 
 	socket.on("doc_subscribe", function (doctype, docname) {
+		// Datahenge: Supposedly Frappe was disabling the Chat Rooms...but I guess not??
 		can_subscribe_doc({
 			socket,
 			doctype,
@@ -63,6 +64,8 @@ function frappe_handlers(realtime, socket) {
 	});
 
 	socket.on("doc_open", function (doctype, docname) {
+
+		// Datahenge - Maybe have to disable this too
 		can_subscribe_doc({
 			socket,
 			doctype,

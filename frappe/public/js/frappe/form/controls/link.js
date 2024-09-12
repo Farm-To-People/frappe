@@ -619,6 +619,8 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		return this.validate_link_and_fetch(value);
 	}
 	validate_link_and_fetch(value) {
+
+		// Datahenge: V15 Upgrade - I'm no longer certain where to write code to skip link validation, based on 'df.ignore_link_validation'
 		const options = this.get_options();
 		if (!options) {
 			return;

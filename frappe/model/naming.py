@@ -265,7 +265,8 @@ def make_autoname(key="", doctype="", doc="", *, ignore_validate=False):
 	"""
 	if key == "hash":
 		# Makeshift "ULID": first 4 chars are based on timestamp, other 6 are random
-		return _get_timestamp_prefix() + _generate_random_string(6)
+		# Datahenge: I'm not sure the Timestamp Prefix will generate enough uniqueness.  Taking this out to 20 characters.
+		return _get_timestamp_prefix() + _generate_random_string(16)
 
 	series = NamingSeries(key)
 	return series.generate_next_name(doc, ignore_validate=ignore_validate)
@@ -375,6 +376,9 @@ def determine_consecutive_week_number(datetime):
 
 
 def getseries(key, digits):
+	"""
+	Datahenge: This really needs to disappear, and be replaced with a non-locking solution.
+	"""	
 	# series created ?
 	# Using frappe.qb as frappe.get_values does not allow order_by=None
 	series = DocType("Series")

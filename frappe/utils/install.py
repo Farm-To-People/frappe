@@ -161,6 +161,10 @@ def before_tests():
 		# don't run before tests if any other app is installed
 		return
 
+	# Datahenge: The official code below is simply awful; running these tests destroys Business Data.
+	# Exiting immediately to avoid the risk.
+	return
+
 	frappe.db.truncate("Custom Field")
 	frappe.db.truncate("Event")
 

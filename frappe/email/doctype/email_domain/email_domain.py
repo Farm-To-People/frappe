@@ -81,8 +81,12 @@ class EmailDomain(Document):
 		if frappe.local.flags.in_patch or frappe.local.flags.in_test or frappe.local.flags.in_install:
 			return
 
-		self.validate_incoming_server_conn()
-		self.validate_outgoing_server_conn()
+		# Datahenge: Disabling the validate function.  It prevents saving the Domain before online IMAP/SMTP
+		# validation.  This makes data-entry very painful, when you want to save progress, but 1 or 2
+		# fields are incorrect or missing.
+		# self.validate_incoming_server_conn()
+		# self.validate_outgoing_server_conn()
+		# EOM
 
 	def on_update(self):
 		"""update all email accounts using this domain"""
@@ -122,3 +126,67 @@ class EmailDomain(Document):
 			self.smtp_port = self.smtp_port or 587
 
 		conn_method((self.smtp_server or ""), cint(self.smtp_port), timeout=30).quit()
+
+# Datahenge
+@frappe.whitelist()
+def validate_domain(email_domain_name):
+	"""Validate email id and check POP3/IMAP and SMTP connections is enabled."""
+	from frappe.utils import validate_email_address, cstr
+
+	doc = frappe.get_doc("Email Domain",email_domain_name)
+	if not doc:
+		frappe.throw(_(f"Could not find document 'Email Domain' named '{email_domain_name}'"))
+
+	if doc.email_id:
+		validate_email_address(doc.email_id, True)
+
+	if frappe.local.flags.in_patch:
+		frappe.msgprint(_("Skipping domain tests because mode = 'in patch'"))
+		return
+
+	if frappe.local.flags.in_test:
+		frappe.msgprint(_("Skipping domain tests because mode = 'in test'"))
+		return
+
+	if frappe.local.flags.in_install:
+		frappe.msgprint(_("Skipping domain tests because mode = 'in install'"))
+		return
+
+	# Inbound Email (IMAP or POP3)
+	try:
+		if doc.use_imap:
+			# IMAP
+			if doc.use_ssl:
+				test = imaplib.IMAP4_SSL(doc.email_server, port=get_port(doc))
+			else:
+				test = imaplib.IMAP4(doc.email_server, port=get_port(doc))
+		else:
+			# POP3
+			if doc.use_ssl:
+				test = poplib.POP3_SSL(doc.email_server, port=get_port(doc))
+			else:
+				test = poplib.POP3(doc.email_server, port=get_port(doc))
+	except Exception:
+		frappe.throw(_("Incoming email account configuration is not valid."))
+		return None
+	finally:
+		try:
+			if doc.use_imap:
+				test.logout()
+			else:
+				test.quit()
+		except Exception:
+			pass
+
+	# Outbound Email (SMTP)
+	try:
+		if doc.use_tls and not doc.smtp_port:
+			doc.smtp_port = 587
+			doc.save()
+		sess = smtplib.SMTP(cstr(doc.smtp_server or ""), cint(doc.smtp_port) or None)
+		sess.quit()
+	except Exception:
+		frappe.throw(_("Outgoing email account configuration is not valid."))
+		return None
+
+	frappe.msgprint(_(f"\u2713 Email domain '{email_domain_name}' is valid."), indicator='green')

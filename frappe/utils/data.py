@@ -84,6 +84,13 @@ def getdate(
 	Converts string date (yyyy-mm-dd) to datetime.date object.
 	If no input is provided, current date is returned.
 	"""
+	# Datahenge:  This ^ is a terrible default behavior.
+
+	# Datahenge: Hotfix because some function (unknown) is passing a string 'null', which won't parse
+	if string_date and isinstance(string_date, str) and string_date == 'null':
+		string_date = None
+	# DH
+
 	if not string_date:
 		return get_datetime().date()
 	if isinstance(string_date, datetime.datetime):
@@ -810,7 +817,7 @@ def cast_fieldtype(fieldtype, value, show_warning=True):
 	if fieldtype in ("Currency", "Float", "Percent"):
 		value = flt(value)
 
-	elif fieldtype in ("Int", "Check"):
+	elif fieldtype in ("Int", "Check"):  # TODO: Datahenge:  Seems VERY likely that we could switch Check to 'boolean' and get better results?
 		value = cint(value)
 
 	elif fieldtype in (
@@ -825,11 +832,25 @@ def cast_fieldtype(fieldtype, value, show_warning=True):
 	):
 		value = cstr(value)
 
+	# Datahenge: This is a huge BUG.
+	# The the value of 'value' is None?  Then Frappe returns the Current Datetime per the clock on the wall.
+	# This is insane.  None means NO DATE.  It doesn't mean arbitrarilyi substitute 'right now'
+	# Creating a cute getdate() function with 2 Inherently Different Behaviors is terrible.  FML.
+	elif fieldtype == "Date":
+		if value is None:
+			return None
+		else:
+			value = getdate(value)  # If you pass a None to this, it was designed to return the Current Datetime!  :eyeroll:
+
 	elif fieldtype == "Date":
 		value = getdate(value)
 
 	elif fieldtype == "Datetime":
-		value = get_datetime(value)
+		# Datahenge: Same problem as above, for goodness sake.
+		if value is None:
+			return None
+		else:		
+			value = get_datetime(value)
 
 	elif fieldtype == "Time":
 		value = to_timedelta(value)

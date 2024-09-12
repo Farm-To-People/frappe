@@ -1532,11 +1532,6 @@ def get_module_path(module, *joins):
 
 	app = get_module_app(module)
 
-	# TODO:  Is this still valid?
-	# Datahenge: Let's provide some better feedback.  This often happens on Renaming a module.
-	if not module in local.module_app.keys():
-		raise KeyError(f"Cannot find module '{module}' in object 'local.module_app'.  Review the contents of 'modules.txt' in the App directory.")
-
 	return get_pymodule_path(app + "." + scrub(module), *joins)
 
 
@@ -2544,7 +2539,7 @@ def parse_json(val):
 
 
 def mock(type, size=1, locale="en"):
-	import faker
+	import faker  # TODO: Datahenge:  Why does Frappe Framework not have 'faker' as a Python dependency?
 
 	results = []
 	fake = faker.Faker(locale)
@@ -2566,6 +2561,12 @@ def validate_and_sanitize_search_inputs(fn):
 		from frappe.desk.search import sanitize_searchfield
 
 		kwargs.update(dict(zip(fn.__code__.co_varnames, args, strict=False)))
+
+		# TODO: Datahenge: A key error is being thrown when working with Pricing Rule's item-specific prices.
+		# Not sure why.  In the meantime, going to improve this code:
+		if 'searchfield' not in kwargs:
+			return []
+
 		sanitize_searchfield(kwargs["searchfield"])
 		kwargs["start"] = cint(kwargs["start"])
 		kwargs["page_len"] = cint(kwargs["page_len"])

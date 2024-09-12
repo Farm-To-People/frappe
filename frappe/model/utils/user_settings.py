@@ -11,6 +11,13 @@ filter_dict = {"doctype": 0, "docfield": 1, "operator": 2, "value": 3}
 
 
 def get_user_settings(doctype, for_update=False):
+
+	# Datahenge: Ignore for certain DocTypes:
+	ignored_doctypes = 'Deleted Document'
+	if doctype in ignored_doctypes:
+		return '{}'
+	# Datahenge End
+	
 	user_settings = frappe.cache.hget("_user_settings", f"{doctype}::{frappe.session.user}")
 
 	if user_settings is None:
@@ -49,6 +56,11 @@ def sync_user_settings():
 	for key, data in frappe.cache.hgetall("_user_settings").items():
 		key = safe_decode(key)
 		doctype, user = key.split("::")  # WTF?
+
+		# Datahenge: Don't record User Settings for `Deleted Document`
+		if doctype in ['Deleted Document']:
+			continue
+
 		frappe.db.multisql(
 			{
 				"mariadb": """INSERT INTO `__UserSettings`(`user`, `doctype`, `data`)
@@ -78,6 +90,12 @@ def get(doctype):
 def update_user_settings_data(
 	user_setting, fieldname, old, new, condition_fieldname=None, condition_values=None
 ):
+
+	# Datahenge:
+	if user_setting.doctype	in ('Deleted Document'):
+		return
+	# Datahenge End
+
 	data = user_setting.get("data")
 	if data:
 		update = False

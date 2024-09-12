@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/frappe/frappe.git"
+    "url": "git+https://github.com/Farm-To-People/frappe.git"
   },
   "author": "Frappe Technologies Pvt. Ltd.",
   "license": "MIT",

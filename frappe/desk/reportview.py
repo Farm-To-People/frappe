@@ -23,7 +23,26 @@ from frappe.utils.data import sbool
 @frappe.whitelist()
 @frappe.read_only()
 def get():
+	"""
+	Datahenge:
+		Not sure the point of this.  It's definitely not part of a "Report", so the module name reportview.py is misleading.
+
+		It's throwing Permission errors for a few DocTypes, when Guest:
+			BTU Task Log
+			Web Subscription Cadence
+			Auth User
+
+		Not sure why it's attempting this; Guests cannot view those DocTypes.
+	"""
+
 	args = get_form_params()
+
+	# Datahenge Bug Fix:
+	if frappe.session.user == 'Guest':
+		if args.doctype in ('BTU Task Log', 'Web Subscription Cadence', 'Auth User'):
+			# Don't waste time trying to query DocTypes you're not allowed to query:
+			return None
+
 	# If virtual doctype, get data from controller get_list method
 	if is_virtual_doctype(args.doctype):
 		controller = get_controller(args.doctype)
@@ -546,6 +565,11 @@ def get_sidebar_stats(stats, doctype, filters=None):
 @frappe.read_only()
 def get_stats(stats, doctype, filters=None):
 	"""get tag info"""
+
+	# TODO: Datahenge : Store the excluded DocTypes in SQL or a configuration file, instead of hardcoding them.
+	if doctype in ['Deleted Document']:
+		return # Not wasting system performance for certain DocTypes.
+
 	import json
 
 	if filters is None:

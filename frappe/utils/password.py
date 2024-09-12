@@ -35,14 +35,19 @@ def get_decrypted_password(doctype, name, fieldname="password", raise_exception=
 	).run()
 
 	if result and result[0][0]:
-		return decrypt(result[0][0])
+		# Datahenge: Adding some extra error handling.
+		try:
+			return decrypt(result[0][0])
+		except Exception as ex:
+			raise Exception(f"Failure get password via decrypt: {ex}") from ex
 
 	elif raise_exception:
-		frappe.throw(
-			_("Password not found for {0} {1} {2}").format(doctype, name, fieldname),
-			frappe.AuthenticationError,
-		)
-
+		# Datahenge: ABSOLUTELY FORKING NOT.  The frappe.AuthenticationError destroys the session's login.
+		#frappe.throw(
+		#	_("Password not found for {0} {1} {2}").format(doctype, name, fieldname),
+		#	frappe.AuthenticationError,
+		#)
+		raise RuntimeError(f"get_decrypted_password() : Unable to find password in Auth for DocType '{doctype}', name '{name}'")
 
 def set_encrypted_password(doctype, name, pwd, fieldname="password"):
 	query = (

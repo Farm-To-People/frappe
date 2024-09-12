@@ -144,7 +144,7 @@ frappe.request.call = function (opts) {
 			frappe.msgprint({
 				title: __("Not found"),
 				indicator: "red",
-				message: __("The resource you are looking for is not available"),
+				message: __("The resource you are looking for is not available (404)"),
 			});
 			opts.error_callback && opts.error_callback();
 		},
@@ -229,8 +229,13 @@ frappe.request.call = function (opts) {
 			opts.error_callback && opts.error_callback();
 		},
 		502: function (xhr) {
-			frappe.msgprint(__("Internal Server Error"));
-			opts.error_callback && opts.error_callback();
+			frappe.msgprint(__("Internal Server Error (502)"));
+			try {
+				opts.error_callback && opts.error_callback();
+				frappe.request.report_error(xhr, opts);
+			} catch (e) {
+				frappe.request.report_error(xhr, opts);
+			}
 		},
 	};
 

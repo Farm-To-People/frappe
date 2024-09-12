@@ -17,6 +17,7 @@ from frappe.utils.file_manager import remove_all
 from frappe.utils.global_search import delete_for_document
 from frappe.utils.password import delete_all_passwords_for
 
+DH_DEBUG_DELETE = False
 
 def delete_doc(
 	doctype=None,
@@ -29,6 +30,7 @@ def delete_doc(
 	ignore_on_trash=False,
 	ignore_missing=True,
 	delete_permanently=False,
+	ignore_on_change=True  # Datahenge
 ):
 	"""
 	Deletes a doc(dt, dn) and validates if it is not submitted and not linked in a live record
@@ -123,10 +125,20 @@ def delete_doc(
 				if not ignore_on_trash:
 					doc.run_method("on_trash")
 					doc.flags.in_delete = True
-					doc.run_method("on_change")
+
+					# Datahenge: Makes no sense that 'on_change' is called for Deletions prior to actual SQL
+					# deletion.  But -also- called post 'on_update()' for INSERT and UPDATE.
+					# Just nonsensical naming.
+					# Also, results of a quick search: there are barely any 'on_change()' functions in all of ERPNext?
+					# Let's try to put an end to this madness.
+					if not ignore_on_change:
+						doc.run_method('on_change')
+					# EOM
 
 				# check if links exist
 				if not force:
+					# Datahenge: These kinds of link validations are causing headaches with Web Subscription Items.
+					#            And also Daily Order Item parent and child lines that relate to each other.
 					try:
 						check_if_doc_is_linked(doc)
 						check_if_doc_is_dynamically_linked(doc)
@@ -194,6 +206,10 @@ def add_to_deleted_document(doc):
 
 
 def update_naming_series(doc):
+	"""
+	Datahenge: Frappe is using this to revert a Naming Series consumption, if the deleted
+	document has the most-recent Series value.  I guess this exists to prevent unnecessary "holes" in the Series?  :shrug:
+	"""	
 	if doc.meta.autoname:
 		if doc.meta.autoname.startswith("naming_series:") and getattr(doc, "naming_series", None):
 			revert_series_if_last(doc.naming_series, doc.name, doc)
@@ -203,10 +219,16 @@ def update_naming_series(doc):
 
 
 def delete_from_table(doctype: str, name: str, ignore_doctypes: list[str], doc):
-	if doctype != "DocType" and doctype == name:
-		frappe.db.delete("Singles", {"doctype": name})
-	else:
-		frappe.db.delete(doctype, {"name": name})
+	"""
+	Datahenge: I want to use SQL foreign keys.  In particular, from a Child document to Parent document.
+	           So this function needs to be reorganized.  So that Child Documents are deleted *first*.
+	"""
+	# Datahenge : Not running this yet...
+
+	#if doctype != "DocType" and doctype == name:
+	#	frappe.db.delete("Singles", {"doctype": name})
+	#else:
+	#	frappe.db.delete(doctype, {"name": name})
 	if doc:
 		child_doctypes = [
 			d.options for d in doc.meta.get_table_fields() if frappe.get_meta(d.options).is_virtual == 0
@@ -224,6 +246,11 @@ def delete_from_table(doctype: str, name: str, ignore_doctypes: list[str], doc):
 	for child_doctype in child_doctypes_to_delete:
 		frappe.db.delete(child_doctype, {"parenttype": doctype, "parent": name})
 
+	# Datahenge: Now once the children are deleted, go ahead and delete the Parent document:
+	if doctype != "DocType" and doctype == name:
+		frappe.db.delete("Singles", {"doctype": name})
+	else:
+		frappe.db.delete(doctype, {"name": name})
 
 def update_flags(doc, flags=None, ignore_permissions=False):
 	if ignore_permissions:
@@ -264,6 +291,9 @@ def check_if_doc_is_linked(doc, method="Delete"):
 	"""
 	Raises excption if the given doc(dt, dn) is linked in another record.
 	"""
+	# TODO: Datahenge: Would be nice to introduce a "cascade" feature here, where Links are deleted when their parent is deleted.
+	# NOTE: For Daily Order Lines, important an index exists for `ref_parent_item`
+
 	from frappe.model.rename_doc import get_link_fields
 
 	link_fields = get_link_fields(doc.doctype)
@@ -274,11 +304,16 @@ def check_if_doc_is_linked(doc, method="Delete"):
 	if method == "Delete":
 		ignored_doctypes.update(frappe.get_hooks("ignore_links_on_delete"))
 
+	# Datahenge:  What Frappe did above in V15 is better.  However, I need the ability to Ignore Links on-demand, depending on the code that's running.
+
 	for lf in link_fields:
 		link_dt, link_field, issingle = lf["parent"], lf["fieldname"], lf["issingle"]
 		if link_dt in ignored_doctypes or (link_field == "amended_from" and method == "Cancel"):
 			continue
-
+		# Datahenge:  Also doing it my way, because I have to:
+		if link_dt in doc.flags.get('dh_ignore_linked_doctypes', []):
+			continue
+		# EOM
 		try:
 			meta = frappe.get_meta(link_dt)
 		except frappe.DoesNotExistError:
@@ -320,7 +355,20 @@ def check_if_doc_is_linked(doc, method="Delete"):
 
 def check_if_doc_is_dynamically_linked(doc, method="Delete"):
 	"""Raise `frappe.LinkExistsError` if the document is dynamically linked"""
+
+	# TODO: Use some flags instead of hard-coding Daily Order Item inside the Frappe App
+	# Datahenge: Skip the Dynamic Link validation for the Daily Order Lines.
+	if doc.doctype == "Daily Order Item":
+		# print(f"check_if_doc_is_dynamically_linked() --> Skipping {doc.doctype}")
+		return
+
 	for df in get_dynamic_link_map().get(doc.doctype, []):
+
+		# Datahenge: Need a way to ignore linked doctypes, no matter what, even if method <> 'Cancel'
+		if df.parent in doc.flags.get('dh_ignore_linked_doctypes', []):
+			continue
+		# Datahenge: End
+
 		ignore_linked_doctypes = doc.get("ignore_linked_doctypes") or []
 
 		if df.parent in frappe.get_hooks("ignore_links_on_delete") or (

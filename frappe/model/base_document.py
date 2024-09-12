@@ -53,6 +53,9 @@ DOCTYPE_TABLE_FIELDS = [
 TABLE_DOCTYPES_FOR_DOCTYPE = {df["fieldname"]: df["options"] for df in DOCTYPE_TABLE_FIELDS}
 DOCTYPES_FOR_DOCTYPE = {"DocType", *TABLE_DOCTYPES_FOR_DOCTYPE.values()}
 
+DH_DEBUG_INSERT = False
+DH_DEBUG_UPDATE = False
+
 
 def get_controller(doctype):
 	"""
@@ -445,7 +448,7 @@ class BaseDocument:
 		return frappe.local.valid_columns[self.doctype]
 
 	def is_new(self) -> bool:
-		return self.get("__islocal")
+		return bool(self.get("__islocal"))  # Datahenge: Don't assume it's a boolean; make it so.
 
 	@property
 	def docstatus(self):
@@ -557,6 +560,8 @@ class BaseDocument:
 				),
 				list(d.values()),
 			)
+			if DH_DEBUG_INSERT:
+				print(f"SQL INSERT ({self.doctype} : {self.name})")			
 		except Exception as e:
 			if frappe.db.is_primary_key_violation(e):
 				if self.meta.autoname == "hash":
@@ -610,9 +615,13 @@ class BaseDocument:
 				),
 				[*list(d.values()), name],
 			)
+			if DH_DEBUG_UPDATE:
+				print(f"SQL UPDATE ({self.doctype} : {self.name})")
 		except Exception as e:
 			if frappe.db.is_unique_key_violation(e):
 				self.show_unique_validation_message(e)
+			if frappe.db.is_deadlocked(e):
+				print(f"Deadlock while trying to update table 'tab{self.doctype}' {columns}")				
 			else:
 				raise
 
@@ -637,7 +646,10 @@ class BaseDocument:
 
 			label = self.get_label_from_fieldname(fieldname)
 
-			frappe.msgprint(_("{0} must be unique").format(label or fieldname))
+			# Datahenge:
+			# The problem with printing a separate message before the Exception?
+			# It's now impossible to *suppress* the message by catching in an outer exception.  :frown:
+			frappe.msgprint(_(f"{label or fieldname} must be unique. {e}"))
 
 		# this is used to preserve traceback
 		raise frappe.UniqueValidationError(self.doctype, self.name, e)
@@ -747,13 +759,19 @@ class BaseDocument:
 			if self.get(df.fieldname) in (None, []) or not has_content(df):
 				missing.append((df.fieldname, get_msg(df)))
 
+		# Datahenge: Do the same thing ^ for fields marked as Mandatory only in the Database.  JS code and UI does not care.
+		for df in self.meta.get("fields", {"reqd_in_database": ('=', 1)}):
+			if self.get(df.fieldname) in (None, []) or not has_content(df):
+				missing.append((df.fieldname, get_msg(df)))
+
 		# check for missing parent and parenttype
 		if self.meta.istable:
 			for fieldname in ("parent", "parenttype"):
 				if not self.get(fieldname):
 					missing.append((fieldname, get_msg(_dict(label=fieldname))))
 
-		return missing
+		# return missing
+		return list(set(missing))  # Datahenge: De-duplicate this.
 
 	def get_invalid_links(self, is_submittable=False):
 		"""Returns list of invalid links and also updates fetch values if not set"""
@@ -770,6 +788,10 @@ class BaseDocument:
 
 		for df in self.meta.get_link_fields() + self.meta.get("fields", {"fieldtype": ("=", "Dynamic Link")}):
 			docname = self.get(df.fieldname)
+
+			if bool(df.ignore_link_validation):  # Datahenge: Do not validate this link's referential integrity.
+				# print(f"Ignoring link {df.fieldname} in DocType {df.doctype}")
+				continue
 
 			if docname:
 				if df.fieldtype == "Link":
@@ -805,6 +827,11 @@ class BaseDocument:
 
 						# don't cache if fetching other values too
 						values = frappe.db.get_value(doctype, docname, values_to_fetch, as_dict=True)
+						# Datahenge:  This seems like a pretty HUGE hole in the framework.
+						if not values:
+							print(f"Datahenge: Cannot find DocType '{doctype}' with name = '{docname}'")
+							invalid_links.append((df.fieldname, docname, get_msg(df, docname)))
+						# Datahenge: End
 
 				if getattr(meta, "issingle", 0):
 					values.name = doctype
@@ -1227,8 +1254,12 @@ class BaseDocument:
 		else:
 			return True
 
-	def reset_values_if_no_permlevel_access(self, has_access_to, high_permlevel_fields):
+	def reset_values_if_no_permlevel_access(self, has_access_to, high_permlevel_fields, throw_exceptions=True, debug=False):
 		"""If the user does not have permissions at permlevel > 0, then reset the values to original / default"""
+
+		# Datahenge : Adding some warning and debugging capability here.  Previously, this function and its caller
+		# provided -zero- feedback.  I had no idea I was unsuccessfully setting a Value on my DocType. :eyeroll:
+
 		to_reset = [
 			df
 			for df in high_permlevel_fields
@@ -1254,8 +1285,24 @@ class BaseDocument:
 				else:
 					ref_doc = self.get_latest()
 
+			changed_values_string = ""  # DH
 			for df in to_reset:
+				if (debug or throw_exceptions) and (self.get(df.fieldname) != ref_doc.get(df.fieldname)):
+					# Datahenge: Check if Before and After are both equivalent to None.  For example, 0 vs None.
+					# If so, the value isnt' "really" being modified.  But rather, it's just a duck typing situation.
+					if (not self.get(df.fieldname)) and (not ref_doc.get(df.fieldname)):
+						continue
+					# Otherwise, append to the 'change_values_string' variable:
+					changed_values_string += f"\n    * '{df.fieldname}' changed from '{self.get(df.fieldname)}' to '{ref_doc.get(df.fieldname)}'"				
 				self.set(df.fieldname, ref_doc.get(df.fieldname))
+
+			if changed_values_string:
+				if throw_exceptions:
+					changed_values_string = f"For DocType {self.doctype}, the following fields are not modifiable due to Permissions:" + changed_values_string
+					raise ValueError(changed_values_string)
+
+				changed_values_string = "WARNING!  The following fields are not modifiable due to Permissions, and are RESET to Original Values:" + changed_values_string
+				frappe.msgprint(changed_values_string, to_console=True)
 
 	def get_value(self, fieldname):
 		df = self.meta.get_field(fieldname)
@@ -1272,6 +1319,27 @@ class BaseDocument:
 		if self.doctype != "DocType":
 			for df in self.meta.get("fields", {"fieldtype": ("=", "Text Editor")}):
 				extract_images_from_doc(self, df.fieldname)
+
+	# Datahenge: Safely assign Values, without accidentally creating new Keys.
+	def safeset(self, key, value, as_value=False):
+		if not hasattr(self, key):
+			raise AttributeError(f"Cannot assign value to unknown attribute '{key}' in class {type(self).__name__}")
+		if isinstance(value, list) and not as_value:
+			self.__dict__[key] = []
+			self.extend(key, value)
+		else:
+			self.__dict__[key] = value
+
+	def pretty_print(self):
+		"""
+		Datahenge: A prettier version of as_json()
+		"""
+		from frappe.utils.response import json_handler
+		ret_dict = self.as_dict(convert_dates_to_str=True)
+		ret_json = json.dumps(ret_dict, indent=4, sort_keys=False, default=json_handler, separators=(',', ': '))
+		print(f"\n----------------\n{self.doctype} : {self.name}\n----------------\n{ret_json}")
+	# Datahenge: End
+
 
 
 def _filter(data, filters, limit=None):

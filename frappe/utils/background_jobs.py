@@ -437,7 +437,8 @@ def validate_queue(queue, default_queue_list=None):
 		default_queue_list = list(get_queues_timeout())
 
 	if queue not in default_queue_list:
-		frappe.throw(_("Queue should be one of {0}").format(", ".join(default_queue_list)))
+		# frappe.throw(_("Queue should be one of {0}").format(", ".join(default_queue_list)))
+		frappe.throw(_("Queue should be one of {0}. Got '{1}' instead.").format(', '.join(default_queue_list), queue))
 
 
 @retry(
@@ -451,7 +452,8 @@ def get_redis_conn(username=None, password=None):
 		raise Exception("You need to call frappe.init")
 
 	elif not frappe.local.conf.redis_queue:
-		raise Exception("redis_queue missing in common_site_config.json")
+		print(f"frappe.local.conf = {frappe.local.conf}")  # Helps when troubleshooting
+		raise ValueError("Key 'redis_queue' is missing from common_site_config.json")
 
 	global _redis_queue_conn
 
@@ -523,7 +525,7 @@ def enqueue_test_job():
 
 
 def test_job(s):
-	import time
+	# import time
 
 	print("sleeping...")
 	time.sleep(s)

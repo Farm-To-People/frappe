@@ -163,7 +163,9 @@ class EmailAccount(Document):
 					self.no_failed = 0
 
 				if self.enable_outgoing:
-					self.validate_smtp_conn()
+					pass
+					# Datahenge: Quit doing this.  Let me save when I want to save.  Validate the settings later without getting in the way.
+					# self.validate_smtp_conn()
 			else:
 				if self.enable_incoming or (self.enable_outgoing and not self.no_smtp_authentication):
 					if not use_oauth:
@@ -733,6 +735,17 @@ class EmailAccount(Document):
 		if self.auth_method == "OAuth":
 			connected_app = frappe.get_doc("Connected App", self.connected_app)
 			return connected_app.get_active_token(self.connected_user)
+
+	@frappe.whitelist()
+	def validate_and_run_tests(self, recipient=''):
+		"""
+		Datahenge: Check the SMTP settings on demand.
+		"""
+		try:
+			self.validate_smtp_conn()  # unfortunately does not return a result
+			frappe.msgprint("\u2713 No errors while calling check_smtp()", to_console=True)
+		except Exception as ex:
+			frappe.msgprint(f"{ex}", to_console=True)
 
 
 @frappe.whitelist()

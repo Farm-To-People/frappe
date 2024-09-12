@@ -9,6 +9,7 @@
  "engine": "InnoDB",
  "field_order": [
   "subject",
+  "language",
   "use_html",
   "response_html",
   "response",
@@ -21,7 +22,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Subject",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 4
   },
   {
    "depends_on": "eval:!doc.use_html",
@@ -53,11 +55,22 @@
    "fieldtype": "Code",
    "label": "Response ",
    "options": "Jinja"
-  }
+  },
+  {
+	"default": "en-US",
+	"fieldname": "language",
+	"fieldtype": "Link",
+	"in_list_view": 1,
+	"in_standard_filter": 1,
+	"label": "Language",
+	"options": "Language",
+	"reqd": 1,
+	"reqd_in_database": 1
+   }  
  ],
  "icon": "fa fa-comment",
  "links": [],
- "modified": "2023-12-12 20:01:07.080625",
+ "modified": "2024-09-01 10:01:07.080625",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Template",

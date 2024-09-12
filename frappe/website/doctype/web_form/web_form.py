@@ -645,7 +645,8 @@ def get_in_list_view_fields(doctype):
 
 	def get_field_df(fieldname):
 		if fieldname == "name":
-			return {"label": "Name", "fieldname": "name", "fieldtype": "Data"}
+			# Datahenge: Use 'ID' instead of 'Name'
+			return {"label": "ID", "fieldname": "name", "fieldtype": "Data"}
 		return meta.get_field(fieldname).as_dict()
 
 	return [get_field_df(f) for f in fields]

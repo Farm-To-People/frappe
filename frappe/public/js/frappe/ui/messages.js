@@ -249,8 +249,11 @@ frappe.msgprint = function (msg, title, is_minimizable) {
 		data.message = "";
 	}
 
-	if (data.message.search(/<br>|<p>|<li>/) == -1) {
-		msg = frappe.utils.replace_newlines(data.message);
+	// Datahenge: Bug fix, only search if 'data.message' is actually a String datatype.
+	if (typeof data.message === "string") {
+		if (data.message.search(/<br>|<p>|<li>/) == -1) {
+			msg = frappe.utils.replace_newlines(data.message);
+		}
 	}
 
 	var msg_exists = false;

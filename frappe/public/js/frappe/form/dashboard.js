@@ -57,6 +57,7 @@ frappe.ui.form.Dashboard = class FormDashboard {
 			collapsible: 1,
 			is_dashboard_section: 1,
 			body_html: this.transactions_area,
+			id: "frappe-Connections"  // Datahenge: Attempt at giving this section a unique ID, so we can locate it later.
 		});
 	}
 
@@ -406,6 +407,10 @@ frappe.ui.form.Dashboard = class FormDashboard {
 	}
 
 	set_open_count() {
+
+		// Datahenge: Disabling this because the performance hits are not worth the benefit right now.
+		return;
+
 		if (
 			!this.data ||
 			!this.data.transactions ||
