@@ -86,6 +86,9 @@ dependencies = [
     "google-auth-oauthlib~=0.4.4",
     "google-auth~=1.29.0",
     "posthog~=3.0.1",
+
+    # Datahenge dependencies
+    "deepdiff~=8.0.1",
 ]
 
 [project.urls]
