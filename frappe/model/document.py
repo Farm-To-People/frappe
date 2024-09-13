@@ -317,7 +317,7 @@ class Document(BaseDocument):
 		self.set_user_and_timestamp()
 		self.set_docstatus()
 		self.check_if_latest()
-		self._prevalidate_links()	# TODO: Do we still need this??  Datahenge, need a means of running some additional code first.
+		self._prevalidate_links()	# TODO: Datahenge: Do we still need this? A means of running some additional code first.
 		self._validate_links()
 		self.check_permission("create")
 		self.run_method("before_insert")
@@ -422,7 +422,7 @@ class Document(BaseDocument):
 		# unexpected NULLs, or broken links.
 
 		self.run_before_validate_methods()  # Datahenge: before_validate() must happen early.
-		
+
 		if self._action != "cancel":
 			self._validate()  # Notice the underscore!  This will call useful validations like Links and Mandatory fields.
 		self.run_before_save_methods()  # Now it's finally time to call this.  This calls Document-specific Controller Methods, like validate()
@@ -724,8 +724,9 @@ class Document(BaseDocument):
 					fail = value != original_value
 
 				if fail:
+					# Datahenge: Needed a better error message
 					frappe.throw(
-						_("Value cannot be changed for {0}").format(
+						_("Value cannot be changed for field '{0}' (Set Once Only)").format(
 							frappe.bold(self.meta.get_label(field.fieldname))
 						),
 						exc=frappe.CannotChangeConstantError,
@@ -735,6 +736,7 @@ class Document(BaseDocument):
 
 	def is_child_table_same(self, fieldname):
 		"""Validate child table is same as original table before saving"""
+		# Datahenge: Disadvantage is only 1 field at a time.  And it doesn't return -how- they are different.		
 		value = self.get(fieldname)
 		original_value = self._doc_before_save.get(fieldname)
 		same = True
@@ -810,6 +812,7 @@ class Document(BaseDocument):
 			high_permlevel_fields = frappe.get_meta(df.options).get_high_permlevel_fields()
 			if high_permlevel_fields:
 				for d in self.get(df.fieldname):
+					# Datahenge: The call below can cause havoc if DocField permissions are not carefully set.
 					d.reset_values_if_no_permlevel_access(has_access_to, high_permlevel_fields)
 
 	def get_permlevel_access(self, permission_type="write"):
@@ -976,8 +979,18 @@ class Document(BaseDocument):
 			)
 		)
 
+	def _prevalidate_links(self, **kwargs):  # pylint: disable=unused-argument
+		"""
+		Datahenge: An opportunity to execute some code, just prior to Link validation.
+		# This is useful is situations where you know Links might be a problem.
+		# And you want a change to do some pre-cleaning first.
+		"""
+		for doc in self.get_all_children():
+			doc.run_method("_prevalidate_links", _parent_doc=self)
+
 	def _validate_links(self):
-		if self.flags.ignore_links or self._action == "cancel":
+		if self.flags.ignore_links or \
+			(hasattr(self, '_action') and self._action == "cancel"):  # Datahenge: Sometimes you want to Validate Links without an Action.
 			return
 
 		invalid_links, cancelled_links = self.get_invalid_links()
@@ -989,7 +1002,11 @@ class Document(BaseDocument):
 
 		if invalid_links:
 			msg = ", ".join(each[2] for each in invalid_links)
-			frappe.throw(_("Could not find {0}").format(msg), frappe.LinkValidationError)
+			# Datahenge: Improved on the error message
+			frappe.throw(
+				_("Invalid link in DocType {self.doctype}. Could not find {msg}"),
+				frappe.LinkValidationError
+			)
 
 		if cancelled_links:
 			msg = ", ".join(each[2] for each in cancelled_links)
@@ -1089,6 +1106,7 @@ class Document(BaseDocument):
 
 	def _submit(self):
 		"""Submit the document. Sets `docstatus` = 1, then saves."""
+		# Datahenge: Not sure if I still need to try + except and reset docstatus ...
 		self.docstatus = DocStatus.submitted()
 		return self.save()
 
@@ -1130,6 +1148,50 @@ class Document(BaseDocument):
 			delete_permanently=delete_permanently,
 		)
 
+	def delete_improved(self, **kwargs):
+		"""
+		Datahenge: An improved and more-complete delete method.
+
+		kwargs:
+ 			force
+			ignore_doctypes
+			for_reload
+			ignore_permissions
+			flags
+			ignore_on_trash
+			ignore_missing
+			delete_permanently
+
+		This function was created because of the need to:
+			1. Ignore link validation when deleting Daily Order lines that are Farm Box parents (pointed at by adjacent Order Lines)
+			2. Pass custom flags like "delete_parent_if_empty" to Controller methods like on_trash() and after_delete()
+
+		This was not possible with out-of-the-box Frappe delete() or delete_doc()
+		"""
+		import frappe.model.delete_doc	as delete_doc_module
+
+		# One very-useful flag is the 'delete_parent_if_empty'
+		if not kwargs:
+			kwargs = {"flags": self.flags}
+		else:
+			kwargs['flags'] = self.flags
+
+		delete_doc_module.delete_doc(
+			self.doctype,
+			self.name,
+			**kwargs)
+
+	def run_before_validate_methods(self):
+		"""
+		Datahenge: Moving 'before_validate' in here, so we can do some work prior to
+		           validating Links, Mandatory fields, and validate() calls.
+		"""
+		self.load_doc_before_save()
+		# before_validate method should be executed before ignoring validations
+		if self._action in ("save", "submit"):
+			self.run_method("before_validate")
+
+
 	def run_before_save_methods(self):
 		"""Run standard methods before	`INSERT` or `UPDATE`. Standard Methods are:
 
@@ -1144,7 +1206,7 @@ class Document(BaseDocument):
 
 		# before_validate method should be executed before ignoring validations
 		if self._action in ("save", "submit"):
-			self.run_method("before_validate")
+			self.run_method("before_validate")  # Datahenge: Questioning this (it may be happening too late, after Link and Mandatory checks)
 
 		if self.flags.ignore_validate:
 			return
@@ -1334,6 +1396,7 @@ class Document(BaseDocument):
 
 		version = frappe.new_doc("Version")
 		if version.update_version_info(doc_to_compare, self):
+			version.action_taken = 'Update' if doc_to_compare else 'Create'  # Datahenge
 			version.insert(ignore_permissions=True)
 
 			if not frappe.flags.in_migrate:
@@ -1722,6 +1785,359 @@ class Document(BaseDocument):
 
 		return f"{doctype}({name})"
 
+	# -------------------------------
+	# DATHENGE: Magic Begins Here:
+	# -------------------------------
+
+	DH_DEBUG = False
+
+	def get_parent_doc(self, new_parent_doc=None):
+		"""
+		Return a child document's parent document.
+		Created By Datahenge
+		"""
+		if new_parent_doc:
+			self.parent_doc = new_parent_doc
+			return self.parent_doc
+		if hasattr(self, 'parent_doc') and self.parent_doc:
+			return self.parent_doc
+		self.parent_doc = self.read_parent_doc_from_db()
+		return self.parent_doc
+
+	def read_parent_doc_from_db(self):
+		"""
+		Return a document's parent document from SQL
+		Created By Datahenge
+		"""
+		if self.parenttype and self.parent:
+			return frappe.get_doc(self.parenttype, self.parent)
+		raise ValueError(f"Document '{self.name}' of type '{self.doctype}' does not have a parent Document.")
+
+	def is_child_doctype(self):
+		"""
+		Returns a True if this document is a child DocType.
+		"""
+		return bool(frappe.get_meta(self.doctype).istable)  # the poorly-named 'istable' DocType metadata
+
+	def summarize_children(self, prefix=None):
+		"""
+		Print a list of child documents to the console.
+		"""
+		print("\n--------")
+		for d in self.get_all_children():
+			print(f"* {prefix or ''} Child Record.  DocType: {d.doctype}, ID: {d.name}")
+		print("--------\n")
+
+	# --------
+	# VALIDATION
+	# --------
+
+	def determine_save_scenarios(self, child_docfield_name):
+
+		current_child_records = self.get(child_docfield_name)
+		doc_orig = self.get_doc_before_save()
+
+		result = {
+			"is_parent_new": None,
+			"parent_action": "Create",
+			"children": []
+		}
+
+		if not doc_orig:
+			# Scenario 1 : New Parent, No Children
+			if not current_child_records:
+				result["is_parent_new"] = True
+				result["parent_action"] = "Create"
+				return result
+			# Scenario 2: New Parent, New Children
+			result["is_parent_new"] = True
+			result["parent_action"] = "Create"
+			for each_child in current_child_records:
+				result["children"].append( {"name": each_child.name, "action": "Create"})
+			return result
+
+		result["is_parent_new"] = False
+		result["parent_action"] = "Update"
+
+		original_child_records = doc_orig.get(child_docfield_name)
+		if (not original_child_records) and (not current_child_records):
+			return result
+
+		child_docs_deleted = [ child_orig for child_orig in original_child_records
+		                       if child_orig.name not in [ child.name for child in current_child_records]
+		]
+
+		if child_docs_deleted:
+			# Scenario 4: Some child docs were deleted.
+			for each_child in child_docs_deleted:
+				result["children"].append( {"name": each_child.name, "action": "Delete"})
+
+
+		# Loop through all the new/current children:
+		for each_child in current_child_records:
+
+			if each_child.name not in [ child_orig.name for child_orig in original_child_records]:
+				# Scenario 5: Some child documents were Inserted.
+				result["children"].append( {"name": each_child.name, "action": "Create"})
+				continue  # Move to next child record.
+
+			# At this point in code, we know Child record existed before & after.  So compare them.
+			child_orig = next(iter([ child_orig for child_orig in original_child_records if child_orig.name == each_child.name ]))
+
+			if _exist_significant_differences(child_orig, each_child):
+				result["children"].append( {"name": each_child.name, "action": "Update"})
+			else:
+				result["children"].append( {"name": each_child.name, "action": None })
+
+		return result
+
+	def before_validate_children(self, child_docfield_name):
+		"""
+		Run the 'before_validate' code on all Child Documents.
+
+		NOTE: If a Child document is being inserted, this calls the 'before_insert' function also.
+		"""
+		if not isinstance(child_docfield_name, str):
+			raise ValueError("Argument 'child_docfield_name' should be a String.")
+		for child_doc in self.get(child_docfield_name):
+			if child_doc.is_new() and hasattr(child_doc, 'before_insert'):
+				child_doc.before_insert(_parent_doc=self)
+			if hasattr(child_doc, 'before_validate'):
+				child_doc.before_validate(_parent_doc=self)
+
+	def validate_children(self, child_docfield_name, **kwargs):
+		"""
+		Datahenge: A controller function for validating Child Doctypes.
+		"""
+		if not isinstance(child_docfield_name, str):
+			raise ValueError("Argument 'child_docfield_name' should be a String.")
+
+		for child_doc in self.get(child_docfield_name):
+			if hasattr(child_doc, 'validate'):
+				child_doc.validate(_parent_doc=self, **kwargs)
+
+	def before_save_children(self, child_docfield_name, **kwargs):
+		"""
+		Datahenge:
+		  * Analyzes what is happeneing to Parent and Children (CRUD)
+		  * Calls either children 'before_save' or 'on_trash', depending on the results.
+		"""
+		if not isinstance(child_docfield_name, str):
+			raise ValueError("Argument 'child_docfield_name' should be a String.")
+
+		current_children = self.get(child_docfield_name)
+		doc_orig = self.get_doc_before_save()
+		if doc_orig:
+			original_children = doc_orig.get(child_docfield_name)
+		else:
+			original_children = []
+
+		save_scenarios = self.determine_save_scenarios(child_docfield_name)
+		for each_child_scenario in save_scenarios["children"]:
+			if each_child_scenario["action"] in ["Create", "Update"]:
+				child_doc = [ each for each in current_children if each.name == each_child_scenario["name"]][0]
+				if hasattr(child_doc, 'before_save'):
+					child_doc.before_save(_parent_doc=self, **kwargs)
+			elif each_child_scenario["action"] in ["Delete"]:
+				child_doc = [ each for each in original_children if each.name == each_child_scenario["name"]][0]
+				if hasattr(child_doc, "on_trash"):
+					child_doc.on_trash(_parent_doc=self, **kwargs)
+
+	# --------
+	# DELETION
+	# --------
+
+	def on_trash_children(self, child_docfield_name):
+		"""
+		If the parent document is pending deletion, cascade the 'on_trash' function to the child documents.
+		"""
+		self.set("__indelete", True)  # Indicates to the child document that parent is undergoing deletion.
+		if not isinstance(child_docfield_name, str):
+			raise ValueError("Argument 'child_docfield_name' should be a String.")
+		for child_doc in self.get(child_docfield_name):
+			if hasattr(child_doc, 'on_trash'):
+				child_doc.on_trash(_parent_doc=self)
+
+	def after_delete_children(self, child_docfield_name):
+		"""
+		After the parent document is deleted, call the 'on_delete' methods of the child documents.
+		"""
+		if not isinstance(child_docfield_name, str):
+			raise ValueError("Argument 'child_docfield_name' should be a String.")
+		for child_doc in self.get(child_docfield_name):
+			if hasattr(child_doc, 'after_delete'):
+				child_doc.after_delete(_parent_doc=self)
+
+	# --------
+	# UPDATES
+	# --------
+
+	def on_update_children(self, child_docfield_name, debug=DH_DEBUG):
+		"""
+		This function analyzes a Parent's child records, and based on CRUD, intelligently calls Child DocType controllers.
+		"""
+		dprint(f"\nEntering 'on_update_children' for DocType '{self.doctype}', Child '{child_docfield_name}'...", debug)
+
+		# TODO: Incorporate new method 'determine_save_scenarios'
+
+		current_child_records = self.get(child_docfield_name)
+		doc_orig = self.get_doc_before_save()
+
+		if not doc_orig:
+			# Scenario 1: Parent is a new Document, therefore any Child is also new.
+			if not current_child_records:
+				dprint(f"* Scenario 0, New Parent: ({self.doctype}, {self.name}) has no children of DocType '{child_docfield_name}'", debug)
+				return
+			for child_record in current_child_records:
+				dprint(f"* Scenario 1, New Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})", debug)
+				if hasattr(child_record, 'after_insert'):
+					child_record.after_insert(_parent_doc=self)
+				if hasattr(child_record, 'on_update'):
+					child_record.on_update(_parent_doc=self)
+			return
+
+		original_child_records = doc_orig.get(child_docfield_name)
+		if (not current_child_records) and (not original_child_records):
+			# Scenario 2: There are no children now, and were not before.  Nothing to analyze.
+			dprint(f"* Scenario 2, Parent had/has no children of DocType {child_docfield_name}", debug)
+			return
+
+		# Scenario 3: Parent is an existing Document, and some Child documents are in play.
+		dprint(f"Quantity child records Before update: {len(original_child_records) or 0}", debug)
+		dprint(f"Quantity child records After update: {len(current_child_records) or 0}", debug)
+
+		docs_deleted = [ child_orig for child_orig in original_child_records
+		                 if child_orig.name not in [ child.name for child in current_child_records]
+		               ]
+
+		if docs_deleted:
+			# Scenario 3A: Pre-existing child documents were Deleted
+			for deleted_doc in docs_deleted:
+				dprint(f"* Scenario 3: Child document of type '{deleted_doc.doctype}' was Deleted.\n", debug)
+				if hasattr(deleted_doc, 'on_trash'):
+					deleted_doc.on_trash(_parent_doc=self)  # call controller method 'on_trash' for this Child record.
+				if hasattr(deleted_doc, 'after_delete'):
+					deleted_doc.after_delete(_parent_doc=self)  # call controller method 'after_delete' for this Child record.
+
+		# Loop through all the children post-update:
+		for child_doc in current_child_records:
+
+			if child_doc.name not in [ child_orig.name for child_orig in original_child_records]:
+				# Scenario 3B: Some child documents were Inserted.
+				dprint(f"* Scenario 4: Child with identifier '{child_doc.name}' was Inserted.", debug)
+				if hasattr(child_doc, 'after_insert'):
+					child_doc.after_insert(_parent_doc=self)
+				if hasattr(child_doc, 'on_update'):
+					child_doc.on_update(_parent_doc=self)
+				if hasattr(child_doc, 'on_change'):
+					child_doc.on_change(_parent_doc=self)
+				continue  # Move to next child record.
+
+			# Child record existed before & after; compare them.
+			child_orig = next(iter([ child_orig for child_orig in original_child_records if child_orig.name == child_doc.name ]))
+
+			if _exist_significant_differences(child_orig, child_doc):
+				# Scenario 2C: Some child document was Modified.
+				dprint(f"* Scenario 5: Child with identifier '{child_doc.name}' was Modified.\n", debug)
+				if hasattr(child_doc, 'on_update'):
+					child_doc.on_update(_parent_doc=self)
+				if hasattr(child_doc, 'on_change'):
+					child_doc.on_change(_parent_doc=self)
+			else:
+				dprint(f"* Scenario 6: Child with identifier '{child_doc.name}' was Untouched.\n", debug)
+
+
+	def set_parent_doc(self, _parent_doc=None):
+		"""
+		Datahenge: Function to assign a class variable 'parent_doc' of type Document Class.
+		"""
+		DEBUG = False
+
+		if _parent_doc and not isinstance(_parent_doc, Document):
+			raise TypeError("Argument '_parent_doc' is not a Document type.")
+
+		# Scenario 1, an argument was provided, so accept it as fact, and apply it.
+		if _parent_doc:
+			self.parent_doc = _parent_doc
+			if DEBUG:
+				print(f"Scenario 1: Argument for parent_doc() was passed (caller = {self.doctype}")
+			return self.parent_doc
+
+		# Scenario 2:  This document instance already has a previously set value; so use that.
+		if hasattr(self, 'parent_doc') and self.parent_doc:
+			if DEBUG:
+				print(f"Scenario 2: parent_doc() previously set for this document. (caller = {self.doctype}")
+			return self.parent_doc
+
+		# Scenario 3: No choice but to try reading from the SQL database.
+		self.parent_doc = self.get_parent_doc()
+		if DEBUG:
+			print(f"Scenario 3: Argument for parent_doc() fetched from SQL database. {self.doctype}")
+
+		if self.parent_doc:
+			return self.parent_doc
+		raise ValueError(f"Function 'set_parent_doc()' was unable to find a parent for calling Document {self.doctype} - {self.name}")
+
+
+	def as_child_get_original_doc(self, _parent_doc=None, parent_refers_to_child="items"):
+		"""
+		Return a copy of the original Child Document, prior to changes.
+		* Custom function by Datahenge
+		"""
+		if not self.is_child_doctype():
+			raise RuntimeError("This function should only be called by Child DocTypes.")
+
+		# There are 3 possibilities we have to handle:
+		# 1. The child document was updated directly via a REST API call.
+		# 2. The child document was updated via the ERPNext website, as a member of a Parent.
+		# 3. The child document was updated by code using save()
+
+		# This should handle Scenarios 1 and 3:
+		doc_before_save = self.get_doc_before_save()
+		if doc_before_save:
+			return doc_before_save
+
+		# Scenario #2 - Updated on the ERPNext website as part of a parent.
+		if not _parent_doc:
+			raise ValueError("Function 'as_child_get_original_doc' requires argument 'parent_doc', when called via ERPNext Website.")
+		parent_orig = _parent_doc.get_doc_before_save()
+		if not parent_orig:
+			return None  # parent is new, therefore no original child document.
+		try:
+			return next(iter([ line for line in getattr(parent_orig, parent_refers_to_child) if line.name == self.name ]))
+		except StopIteration:
+			return None  # Order Line is New.
+
+
+	def set_called_via_parent(self, parent_doc=None):
+		"""
+		Datahenge: We used a custom "flag" attribute named "called_via_parent" to detect whether Document
+		controllers were triggered by a parent (ERPNext UI), or not.
+		"""
+		# NOTE: Very Important to set the value inside "flags".  Otherwise, the data is lost during things like delete().
+
+		if not self.meta.get('istable'):  # Datahenge: Terrible name.  Really means 'is_child_table'
+			return self.flags.pop("called_via_parent", False)  # important to set a default, or you get a Key Errror.
+
+		if hasattr(self, "flags") and ("called_via_parent" in self.flags) and self.flags.get("called_via_parent") is True:
+			return True
+
+		if bool(parent_doc):
+			self.flags.called_via_parent = True
+			return True
+
+		return False
+
+	def get_called_via_parent(self):
+		if hasattr(self, "flags") and ("called_via_parent" in self.flags) and self.flags.get("called_via_parent") is True:
+			return True
+		return False
+
+# ------------------
+# Non-Class methods:
+# ------------------
+
+
 
 def execute_action(__doctype, __name, __action, **kwargs):
 	"""Execute an action on a document (called by background worker)"""
@@ -1808,3 +2224,119 @@ def unlock_document(doctype: str | None = None, name: str | None = None, args=No
 		name = str(args["name"])
 	frappe.get_doc(doctype, name).unlock()
 	frappe.msgprint(frappe._("Document Unlocked"), alert=True)
+
+
+# ------------------
+# Datahenge Function Additions:
+# ------------------
+
+def get_field_differences(doc_before,
+						  doc_after,
+                          error_on_type_changes=True,
+						  ignore_creation=True,
+                          ignore_modified=True,
+						  ignore_list=None):
+	"""
+	Datahenge: Given 2 documents, compare values, and return a DeepDiff object.
+	"""
+	from deepdiff import DeepDiff
+	from temporal import validate_datatype  # Late Import due to cross-module dependency
+	from ftp.ftp_module.generics import doc_to_stringtyped_dict  # Late Import due to cross-module dependency
+
+	validate_datatype("doc_before", doc_before, Document, True)
+	validate_datatype("doc_after", doc_after, Document, True)
+	before = doc_to_stringtyped_dict(doc_before)
+	after = doc_to_stringtyped_dict(doc_after)
+
+	# Create a list of fields to ignore, when calculating differences.
+	exclude_paths = []
+	if ignore_creation:
+		exclude_paths.append("root['creation']")  # ignore and strip 'creation' from the results.
+		exclude_paths.append("root['owner']")  # ignore and strip 'owner' from the results.
+
+	if ignore_modified:
+		exclude_paths.append("root['modified']")  # ignore and strip 'modified' from the results.
+		exclude_paths.append("root['modified_by']")  # ignore and strip 'modified_by' from the results.
+
+	if ignore_list:
+		for each in ignore_list:
+			exclude_paths.append(f"root['{each}']")
+	if not exclude_paths:
+		exclude_paths = None
+
+	diff = DeepDiff(before, after, exclude_paths=exclude_paths)
+	if error_on_type_changes and ('type_changes' in diff.keys()):
+		type_changes = diff['type_changes']
+		if isinstance(type_changes, dict):
+			# Scenario 1: 'type_changes' are a Dictionary:
+			for key in type_changes.keys():
+				old_type = type_changes[key]['old_type']
+				new_type = type_changes[key]['new_type']
+				NoneType = type(None)
+				if (old_type == NoneType) or (new_type == NoneType):
+					continue  # It's okay if either old or new is a NoneType
+				raise TypeError(f"In function 'get_field_differences(), datatypes changed (Before vs. Current). {diff['type_changes']}")
+		else:
+			raise TypeError(f"In function 'get_field_differences(), datatypes changed (Before vs. Current). {diff['type_changes']}")
+
+	# print(f"\nvalue of diff = \n{diff.to_dict()}\n")
+	return diff
+
+
+def _exist_significant_differences(document1, document2):
+	"""
+	Given 2 Frappe Documents, are there -significant- differences between them?
+	  * Ignore creation and modified datetime differences.
+	  * Ignore '__unsaved' attribute.
+	  * NOTE: Must handle insanity that is Dates and Datetimes switching data-types midstream :eyeroll:
+	"""
+
+	differences = get_field_differences(document1, document2).to_dict()
+	significant_differences = []
+
+	if 'values_changed' in differences:
+		for diff in differences['values_changed']:
+			if diff == "root['modified']":
+				continue
+			#if diff[2] == [('__unsaved', 1)]:
+			#	continue
+			significant_differences.append(diff)
+
+	if len(significant_differences) > 0:
+		# print(f"ESD: Significant differences found between 2 documents:\n{significant_differences}")
+		return True
+	return False
+
+
+def dprint(message, enabled=False):
+	"""
+	Datahenge: Quick hack for printing when needed, without fussing with a bunch of comments.
+	"""
+	if enabled:
+		print(message)
+
+# --------
+# Datahenge
+# --------
+
+def get_document_datafield_names(doctype_name, include_child_tables=True):
+	"""
+	Purpose: Given any DocType's name, return the field names that are truly SQL fields.
+	Datahenge: Once again, shocking this isn't part of standard Frappe framework.
+	"""
+	# A bit of syntax explanation: we're merging 2 lists.
+	# The first is tuple 'default_fields' converted to a list.
+	# The second is list comprehension, the DocFields for this DocType that are 'data_fieldtypes'
+	# Finally, sort them.
+
+	result = list(default_fields)
+	result += [ docfield.fieldname for docfield in frappe.get_meta(doctype_name).fields
+	            if docfield.fieldtype in data_fieldtypes]
+
+	# Although a "Table" is not actually a SQL column, it's commonly passed as part of a JSON payload
+	# when calling REST APIs.  Since that's what I designed this for, it's good to include them by default.
+	if include_child_tables:
+		result += [ docfield.fieldname for docfield in frappe.get_meta(doctype_name).fields
+					if docfield.fieldtype in table_fields]
+
+	return sorted(result)
