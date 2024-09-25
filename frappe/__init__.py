@@ -378,15 +378,16 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 	sites_path = sites_path or getattr(local, "sites_path", None)
 	site_path = site_path or getattr(local, "site_path", None)
 
-	if not sites_path:
-		print("WARNING: get_site_config() : No value for variable 'sites_path'")
-	else:
-		print(f"INFO: Value for 'sites_path' = {pathlib.Path(sites_path).absolute()}")
+	#if not sites_path:
+	#	print("WARNING: get_site_config() : No value for variable 'sites_path'")
+	#else:
+	#	print(f"INFO: Value for 'sites_path' = {pathlib.Path(sites_path).absolute()}")
 
 	if not site_path:
 		print("get_site_config() : No value for variable 'site_path'")
 	else:
-		print(f"INFO: Value for 'site_path' = {pathlib.Path(site_path).absolute()}")
+		pass
+		# print(f"INFO: Value for 'site_path' = {pathlib.Path(site_path).absolute()}")
 
 	if sites_path:
 		config.update(get_common_site_config(sites_path))
@@ -2719,38 +2720,3 @@ def debug_decorator(func):
 		func(*args, **kwargs)
 		print(f'{"-"*30}')
 	return wrapper
-
-
-# Datahenge: Attempt at a more-flexible print function
-class DEL_YPrintLevel(Enum):
-	Console = 1
-	Web = 2
-	All = 3
-
-
-def DEL_yprint(message, print_level=DEL_YPrintLevel.Console, with_conditions=False, conditions=None):
-	"""
-	Datahenge: a smarter print() function.  Avoids sprinkling IF-ELSE statements in ERPNext code.
-	"""
-
-	if not message:
-		return
-	if not print_level:
-		return
-
-	if isinstance(print_level, str):
-		print_level =DEL_YPrintLevel[print_level]  # convert from String to Enum (JavaScript code may be passing this argument)
-
-	if (with_conditions is True) and not conditions:
-		# Datahenge: Would like to accomplish this with a single variable, but concerned about None and "truthiness"
-		return
-
-	if print_level in (DEL_YPrintLevel.Console, DEL_YPrintLevel.All):
-		print(message)  # print to console
-	if print_level in (DEL_YPrintLevel.Web, DEL_YPrintLevel.All):
-		msgprint(message)  # print to web browser pop-up
-
-
-def DEL_clear_console():
-	os.system('clear')
-	print()  # extra line helps keep statements aligned
