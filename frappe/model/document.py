@@ -1004,7 +1004,7 @@ class Document(BaseDocument):
 			msg = ", ".join(each[2] for each in invalid_links)
 			# Datahenge: Improved on the error message
 			frappe.throw(
-				_("Invalid link in DocType {self.doctype}. Could not find {msg}"),
+				_(f"Invalid link in DocType '{self.doctype}'. Could not find {msg}"),
 				frappe.LinkValidationError
 			)
 
