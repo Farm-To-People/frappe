@@ -515,6 +515,7 @@ def _enter_console(extra_args=None):
 		os.environ["PSQL_HISTORY"] = os.path.abspath(get_site_path("logs", "postgresql_console.log"))
 
 	bin, args, bin_name = get_command(
+		socket=frappe.conf.db_socket,
 		host=frappe.conf.db_host,
 		port=frappe.conf.db_port,
 		user=frappe.conf.db_name,
@@ -782,12 +783,12 @@ def run_tests(
 			click.secho(f"bench --site {site} set-config allow_tests true", fg="green")
 			return
 
-		frappe.init(site=site)
-
+		frappe.init(site)  # init frappe.flags
 		frappe.flags.skip_before_tests = skip_before_tests
 		frappe.flags.skip_test_records = skip_test_records
 
 		ret = frappe.test_runner.main(
+			site,
 			app,
 			module,
 			doctype,
@@ -930,7 +931,11 @@ def run_ui_tests(
 		formatted_command += " " + " ".join(cypressargs)
 
 	click.secho("Running Cypress...", fg="yellow")
-	frappe.commands.popen(formatted_command, cwd=app_base_path, raise_err=True)
+	try:
+		frappe.commands.popen(formatted_command, cwd=app_base_path, raise_err=True)
+	except subprocess.CalledProcessError as e:
+		click.secho("Cypress tests failed", fg="red")
+		raise click.exceptions.Exit(1) from e
 
 
 @click.command("serve")

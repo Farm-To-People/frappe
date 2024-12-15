@@ -799,6 +799,7 @@ docfield_properties = {
 	"hide_seconds": "Check",
 	"is_virtual": "Check",
 	"link_filters": "JSON",
+	"placeholder": "Data",
 }
 
 doctype_link_properties = {

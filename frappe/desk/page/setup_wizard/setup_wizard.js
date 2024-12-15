@@ -464,7 +464,15 @@ frappe.setup.slides_settings = [
 				fieldtype: "Data",
 				options: "Email",
 			},
-			{ fieldname: "password", label: __("Password"), fieldtype: "Password", length: 512 },
+			{
+				fieldname: "password",
+				label:
+					frappe.session.user === "Administrator"
+						? __("Password")
+						: __("Update Password"),
+				fieldtype: "Password",
+				length: 512,
+			},
 		],
 
 		onload: function (slide) {
@@ -605,9 +613,11 @@ frappe.setup.utils = {
 			Bind a slide's country, timezone and currency fields
 		*/
 		slide.get_input("country").on("change", function () {
-			let country = slide.get_input("country").val();
-			let $timezone = slide.get_input("timezone");
 			let data = frappe.setup.data.regional_data;
+			let country = slide.get_input("country").val();
+			if (!(country in data.country_info)) return;
+
+			let $timezone = slide.get_input("timezone");
 
 			$timezone.empty();
 

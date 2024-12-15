@@ -191,7 +191,8 @@ def execute_job(site, method, event, job_name, kwargs, user=None, is_async=True,
 	retval = None
 
 	if is_async:
-		frappe.connect(site)
+		frappe.init(site=site)
+		frappe.connect()
 		if os.environ.get("CI"):
 			frappe.flags.in_test = True
 
@@ -634,6 +635,9 @@ def _start_sentry():
 
 	if tracing_sample_rate := os.getenv("SENTRY_TRACING_SAMPLE_RATE"):
 		kwargs["traces_sample_rate"] = float(tracing_sample_rate)
+
+	if profiling_sample_rate := os.getenv("SENTRY_PROFILING_SAMPLE_RATE"):
+		kwargs["profiles_sample_rate"] = float(profiling_sample_rate)
 
 	sentry_sdk.init(
 		dsn=sentry_dsn,

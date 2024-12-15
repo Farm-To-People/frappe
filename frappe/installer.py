@@ -21,9 +21,10 @@ from frappe.utils.dashboard import sync_dashboards
 from frappe.utils.synchronization import filelock
 
 
-def _is_scheduler_enabled() -> bool:
+def _is_scheduler_enabled(site) -> bool:
 	enable_scheduler = False
 	try:
+		frappe.init(site=site)
 		frappe.connect()
 		enable_scheduler = cint(frappe.db.get_single_value("System Settings", "enable_scheduler"))
 	except Exception:
@@ -44,12 +45,14 @@ def _new_site(
 	install_apps=None,
 	source_sql=None,
 	force=False,
-	no_mariadb_socket=False,
 	reinstall=False,
 	db_password=None,
 	db_type=None,
 	db_host=None,
 	db_port=None,
+	setup_db=True,
+	mariadb_user_host_login_scope=None,
+	db_socket=None,
 ):
 	"""Install a new Frappe site"""
 
@@ -59,7 +62,7 @@ def _new_site(
 		print(f"Site {site} already exists")
 		sys.exit(1)
 
-	if no_mariadb_socket and not db_type == "mariadb":
+	if mariadb_user_host_login_scope and not db_type == "mariadb":
 		print("--no-mariadb-socket requires db_type to be set to mariadb.")
 		sys.exit(1)
 
@@ -77,7 +80,7 @@ def _new_site(
 
 	try:
 		# enable scheduler post install?
-		enable_scheduler = _is_scheduler_enabled()
+		enable_scheduler = _is_scheduler_enabled(site)
 	except Exception:
 		enable_scheduler = False
 
@@ -95,9 +98,11 @@ def _new_site(
 			reinstall=reinstall,
 			db_password=db_password,
 			db_type=db_type,
+			db_socket=db_socket,
 			db_host=db_host,
 			db_port=db_port,
-			no_mariadb_socket=no_mariadb_socket,
+			setup=setup_db,
+			mariadb_user_host_login_scope=mariadb_user_host_login_scope,
 		)
 
 		apps_to_install = ["frappe"] + (frappe.conf.get("install_apps") or []) + (list(install_apps) or [])
@@ -132,10 +137,12 @@ def install_db(
 	db_type=None,
 	db_host=None,
 	db_port=None,
-	no_mariadb_socket=False,
+	setup=True,
+	mariadb_user_host_login_scope=None,
+	db_socket=None,
 ):
 	import frappe.database
-	from frappe.database import setup_database
+	from frappe.database import bootstrap_database, setup_database
 
 	if not db_type:
 		db_type = frappe.conf.db_type
@@ -150,6 +157,7 @@ def install_db(
 		site_config=site_config,
 		db_password=db_password,
 		db_type=db_type,
+		db_socket=db_socket,
 		db_host=db_host,
 		db_port=db_port,
 	)
@@ -157,7 +165,14 @@ def install_db(
 
 	frappe.flags.root_login = root_login
 	frappe.flags.root_password = root_password
-	setup_database(force, source_sql, verbose, no_mariadb_socket)
+
+	if setup:
+		setup_database(force, verbose, mariadb_user_host_login_scope)
+
+	bootstrap_database(
+		verbose=verbose,
+		source_sql=source_sql,
+	)
 
 	frappe.conf.admin_password = frappe.conf.admin_password or admin_password
 
@@ -526,16 +541,38 @@ def init_singles():
 			continue
 
 
-def make_conf(db_name=None, db_password=None, site_config=None, db_type=None, db_host=None, db_port=None):
+def make_conf(
+	db_name=None,
+	db_password=None,
+	site_config=None,
+	db_type=None,
+	db_host=None,
+	db_port=None,
+	db_socket=None,
+):
 	site = frappe.local.site
-	make_site_config(db_name, db_password, site_config, db_type=db_type, db_host=db_host, db_port=db_port)
+	make_site_config(
+		db_name,
+		db_password,
+		site_config,
+		db_type=db_type,
+		db_host=db_host,
+		db_port=db_port,
+		db_socket=db_socket,
+	)
 	sites_path = frappe.local.sites_path
 	frappe.destroy()
 	frappe.init(site, sites_path=sites_path)
 
 
 def make_site_config(
-	db_name=None, db_password=None, site_config=None, db_type=None, db_host=None, db_port=None
+	db_name=None,
+	db_password=None,
+	site_config=None,
+	db_type=None,
+	db_socket=None,
+	db_host=None,
+	db_port=None,
 ):
 	frappe.create_folder(os.path.join(frappe.local.site_path))
 	site_file = get_site_config_path()
@@ -546,6 +583,9 @@ def make_site_config(
 
 			if db_type:
 				site_config["db_type"] = db_type
+
+			if db_socket:
+				site_config["db_socket"] = db_socket
 
 			if db_host:
 				site_config["db_host"] = db_host

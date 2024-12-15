@@ -42,6 +42,7 @@ from frappe.utils.data import cint, cstr, sbool
 
 # Local application imports
 from .exceptions import *
+from .types.frappedict import _dict
 from .utils.jinja import (
 	get_email_from_template,
 	get_jenv,
@@ -51,8 +52,37 @@ from .utils.jinja import (
 )
 from .utils.lazy_loader import lazy_import
 
-__version__ = "15.40.3"
+__version__ = "15.50.0"
 __title__ = "Frappe Framework"
+
+# This if block is never executed when running the code. It is only used for
+# telling static code analyzer where to find dynamically defined attributes.
+if TYPE_CHECKING:  # pragma: no cover
+	from werkzeug.wrappers import Request
+
+	from frappe.database.mariadb.database import MariaDBDatabase
+	from frappe.database.postgres.database import PostgresDatabase
+	from frappe.email.doctype.email_queue.email_queue import EmailQueue
+	from frappe.model.document import Document
+	from frappe.query_builder.builder import MariaDB, Postgres
+	from frappe.utils.redis_wrapper import RedisWrapper
+
+	db: MariaDBDatabase | PostgresDatabase
+	qb: MariaDB | Postgres
+	cache: RedisWrapper
+	response: _dict
+	conf: _dict
+	form_dict: _dict
+	flags: _dict
+	request: Request
+	session: _dict
+	user: str
+	flags: _dict
+	lang: str
+
+
+# end: static analysis hack
+
 
 controllers = {}
 local = Local()
@@ -69,28 +99,6 @@ if _dev_server:
 	# Datahenge - I don't care about the deprecation warnings, just hide them.
 	warnings.simplefilter("ignore", DeprecationWarning)
 	warnings.simplefilter("ignore", PendingDeprecationWarning)
-
-class _dict(dict):
-	"""dict like object that exposes keys as attributes"""
-
-	__slots__ = ()
-	__getattr__ = dict.get
-	__setattr__ = dict.__setitem__
-	__delattr__ = dict.__delitem__
-	__setstate__ = dict.update
-
-	def __getstate__(self):
-		return self
-
-	def update(self, *args, **kwargs):
-		"""update and return self -- the missing dict feature in python"""
-
-		super().update(*args, **kwargs)
-		return self
-
-	def copy(self):
-		return _dict(self)
-
 
 def _(msg: str, lang: str | None = None, context: str | None = None) -> str:
 	"""Return translated string in current lang, if exists.
@@ -140,45 +148,9 @@ def _lt(msg: str, lang: str | None = None, context: str | None = None):
 
 	Note: Result is not guaranteed to equivalent to pure strings for all operations.
 	"""
+	from .types.lazytranslatedstring import _LazyTranslate
+
 	return _LazyTranslate(msg, lang, context)
-
-
-@functools.total_ordering
-class _LazyTranslate:
-	__slots__ = ("msg", "lang", "context")
-
-	def __init__(self, msg: str, lang: str | None = None, context: str | None = None) -> None:
-		self.msg = msg
-		self.lang = lang
-		self.context = context
-
-	@property
-	def value(self) -> str:
-		return _(str(self.msg), self.lang, self.context)
-
-	def __str__(self):
-		return self.value
-
-	def __add__(self, other):
-		if isinstance(other, str | _LazyTranslate):
-			return self.value + str(other)
-		raise NotImplementedError
-
-	def __radd__(self, other):
-		if isinstance(other, str | _LazyTranslate):
-			return str(other) + self.value
-		return NotImplementedError
-
-	def __repr__(self) -> str:
-		return f"'{self.value}'"
-
-	# NOTE: it's required to override these methods and raise error as default behaviour will
-	# return `False` in all cases.
-	def __eq__(self, other):
-		raise NotImplementedError
-
-	def __lt__(self, other):
-		raise NotImplementedError
 
 
 def as_unicode(text, encoding: str = "utf-8") -> str:
@@ -218,34 +190,6 @@ debug_log = local("debug_log")
 message_log = local("message_log")
 
 lang = local("lang")
-
-# This if block is never executed when running the code. It is only used for
-# telling static code analyzer where to find dynamically defined attributes.
-if TYPE_CHECKING:  # pragma: no cover
-	from werkzeug.wrappers import Request
-
-	from frappe.database.mariadb.database import MariaDBDatabase
-	from frappe.database.postgres.database import PostgresDatabase
-	from frappe.email.doctype.email_queue.email_queue import EmailQueue
-	from frappe.model.document import Document
-	from frappe.query_builder.builder import MariaDB, Postgres
-	from frappe.utils.redis_wrapper import RedisWrapper
-
-	db: MariaDBDatabase | PostgresDatabase
-	qb: MariaDB | Postgres
-	cache: RedisWrapper
-	response: _dict
-	conf: _dict
-	form_dict: _dict
-	flags: _dict
-	request: Request
-	session: _dict
-	user: str
-	flags: _dict
-	lang: str
-
-
-# end: static analysis hack
 
 
 def init(site: str, sites_path: str = ".", new_site: bool = False, force=False) -> None:
@@ -330,12 +274,16 @@ def connect(site: str | None = None, db_name: str | None = None, set_admin_as_us
 	if site:
 		init(site)
 
+	assert db_name or local.conf.db_name, "site must be fully initialized, db_name missing"
+	assert local.conf.db_password, "site must be fully initialized, db_password missing"
+
 	local.db = get_db(
+		socket=local.conf.db_socket,
 		host=local.conf.db_host,
 		port=local.conf.db_port,
-		user=db_name or local.conf.db_name,
+		user=local.conf.db_name or db_name,
 		password=local.conf.db_password,
-		cur_db_name=db_name or local.conf.db_name,
+		cur_db_name=local.conf.db_name or db_name,
 	)
 	if set_admin_as_user:
 		set_user("Administrator")
@@ -356,6 +304,7 @@ def connect_replica() -> bool:
 		password = local.conf.replica_db_password
 
 	local.replica_db = get_db(
+		socket=None,
 		host=local.conf.replica_host,
 		port=port,
 		user=user,
@@ -419,6 +368,7 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 		os.environ.get("FRAPPE_REDIS_CACHE") or config.get("redis_cache") or "redis://127.0.0.1:13311"
 	)
 	config["db_type"] = os.environ.get("FRAPPE_DB_TYPE") or config.get("db_type") or "mariadb"
+	config["db_socket"] = os.environ.get("FRAPPE_DB_SOCKET") or config.get("db_socket")
 	config["db_host"] = os.environ.get("FRAPPE_DB_HOST") or config.get("db_host") or "127.0.0.1"
 	config["db_port"] = (
 		os.environ.get("FRAPPE_DB_PORT") or config.get("db_port") or db_default_ports(config["db_type"])
@@ -2401,8 +2351,11 @@ def logger(module=None, with_more_info=False, allow_site=True, filter=None, max_
 
 
 def get_desk_link(doctype, name):
-	html = '<a href="/app/Form/{doctype}/{name}" style="font-weight: bold;">{doctype_local} {name}</a>'
-	return html.format(doctype=doctype, name=name, doctype_local=_(doctype))
+	meta = get_meta(doctype)
+	title = get_value(doctype, name, meta.get_title_field())
+
+	html = '<a href="/app/Form/{doctype}/{name}" style="font-weight: bold;">{doctype_local} {title_local}</a>'
+	return html.format(doctype=doctype, name=name, doctype_local=_(doctype), title_local=_(title))
 
 
 def bold(text):

@@ -67,7 +67,7 @@ class DbManager:
 		from frappe.utils import execute_in_shell
 
 		# Ensure that the entire process fails if any part of the pipeline fails
-		command = ["set -o pipefail;"]
+		command: list[str] = ["set -o pipefail;"]
 
 		# Handle gzipped backups
 		if source.endswith(".gz"):
@@ -79,10 +79,11 @@ class DbManager:
 			command.extend(["cat", source, "|"])
 
 		# Newer versions of MariaDB add in a line that'll break on older versions, so remove it
-		command.extend(["sed", r"'/\/\*!999999\\- enable the sandbox mode \*\//d'", "|"])
+		command.extend(["sed", r"'/\/\*M\{0,1\}!999999\\- enable the sandbox mode \*\//d'", "|"])
 
 		# Generate the restore command
 		bin, args, bin_name = get_command(
+			socket=frappe.conf.db_socket,
 			host=frappe.conf.db_host,
 			port=frappe.conf.db_port,
 			user=user,
@@ -90,7 +91,7 @@ class DbManager:
 			db_name=target,
 		)
 		if not bin:
-			frappe.throw(
+			return frappe.throw(
 				_("{} not found in PATH! This is required to restore the database.").format(bin_name),
 				exc=frappe.ExecutableNotFound,
 			)

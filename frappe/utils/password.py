@@ -35,11 +35,7 @@ def get_decrypted_password(doctype, name, fieldname="password", raise_exception=
 	).run()
 
 	if result and result[0][0]:
-		# Datahenge: Adding some extra error handling.
-		try:
-			return decrypt(result[0][0])
-		except Exception as ex:
-			raise Exception(f"Failure get password via decrypt: {ex}") from ex
+		return decrypt(result[0][0], key=f"{doctype}.{name}.{fieldname}")
 
 	elif raise_exception:
 		# Datahenge: ABSOLUTELY FORKING NOT.  The frappe.AuthenticationError destroys the session's login.
@@ -191,7 +187,7 @@ def encrypt(txt, encryption_key=None):
 	return cstr(cipher_suite.encrypt(encode(txt)))
 
 
-def decrypt(txt, encryption_key=None):
+def decrypt(txt, encryption_key=None, key: str | None = None):
 	# Only use encryption_key value generated with Fernet.generate_key().decode()
 
 	try:
@@ -200,12 +196,13 @@ def decrypt(txt, encryption_key=None):
 	except InvalidToken:
 		# encryption_key in site_config is changed and not valid
 		frappe.throw(
-			_("Encryption key is invalid! Please check site_config.json")
-			+ "<br>"
+			(_("Failed to decrypt key {0}").format(key) + "<br><br>" if key else "")
+			+ _("Encryption key is invalid! Please check site_config.json")
+			+ "<br><br>"
 			+ _(
 				"If you have recently restored the site you may need to copy the site config contaning original Encryption Key."
 			)
-			+ "<br>"
+			+ "<br><br>"
 			+ _(
 				"Please visit https://frappecloud.com/docs/sites/migrate-an-existing-site#encryption-key for more information."
 			),
