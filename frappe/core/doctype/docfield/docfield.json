@@ -592,7 +592,7 @@
    "fieldname": "make_attachment_public",
    "fieldtype": "Check",
    "label": "Make Attachment Public (by default)"
-  }
+  },
   {
   "default": "0",
   "depends_on": "eval:!in_list([\"Section Break\", \"Column Break\", \"Button\", \"HTML\"], doc.fieldtype)",
