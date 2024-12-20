@@ -236,7 +236,11 @@ def import_doc(
 		doc.flags.ignore_permissions = True
 		doc.flags.ignore_mandatory = True
 
-	doc.insert()
+	# Datahenge: Important to mention the DocType's name, otherwise there's no way of knowing from the error message or traceback.
+	try:
+		doc.insert()
+	except Exception as ex:
+		raise IOError(f"Failed to create SQL table for DocType '{doc.name}'") from ex
 
 	frappe.flags.in_import = False
 

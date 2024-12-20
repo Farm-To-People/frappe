@@ -378,15 +378,19 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 		index.
 		"""
 
-		indexes = self.sql(
-			f"""SHOW INDEX FROM `{table_name}`
-				WHERE Column_name = "{fieldname}"
-					AND Seq_in_index = 1
-					AND Non_unique={int(not unique)}
-					AND Index_type != 'FULLTEXT'
-				""",
-			as_dict=True,
-		)
+		try:
+			indexes = self.sql(
+				f"""SHOW INDEX FROM `{table_name}`
+					WHERE Column_name = "{fieldname}"
+						AND Seq_in_index = 1
+						AND Non_unique={int(not unique)}
+						AND Index_type != 'FULLTEXT'
+					""",
+				as_dict=True,
+			)
+		except Exception as ex:
+			print(f"ERROR in get_column_index() for table {table_name}")
+			return None
 
 		# Same index can be part of clustered index which contains more fields
 		# We don't want those.
@@ -454,10 +458,6 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 	def get_tables(self, cached=True):
 		"""Returns list of tables"""
 
-		# Datahenge: What if I only care about the tables in the active database?
-		# AND TABLE_SCHEMA = %(database_name)s
-		#	""", values={"database_name": frappe.db.db_name})
-
 		to_query = not cached
 
 		if cached:
@@ -467,10 +467,12 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 		if to_query:
 			information_schema = frappe.qb.Schema("information_schema")
 
+			# Datahenge: Why is standard code returning every single Table name in the entire database?
 			tables = (
 				frappe.qb.from_(information_schema.tables)
 				.select(information_schema.tables.table_name)
-				.where(information_schema.tables.table_schema != "information_schema")
+				#.where(information_schema.tables.table_schema != "information_schema")
+				.where(information_schema.tables.table_schema == frappe.db.cur_db_name)
 				.run(pluck=True)
 			)
 			frappe.cache.set_value("db_tables", tables)

@@ -236,6 +236,9 @@ class Database:
 		try:
 			self._cursor.execute(query, values)
 		except Exception as e:
+			# Datahenge: Because sometimes you need to see the query syntax to troubleshoot!
+			if hasattr(frappe.local, "print_sql_query") and frappe.local.print_sql_query:
+				print(f"Error executing query:\n{query}")
 			if self.is_syntax_error(e):
 				frappe.log(f"Syntax error in query:\n{query} {values or ''}")
 

@@ -69,8 +69,9 @@ def run_all(skip_failing: bool = False, patch_type: PatchType | None = None) -> 
 			print("Failed to execute patch")
 			update_patch_log(patch, skipped=True)
 
-	patches = get_all_patches(patch_type=patch_type)
+	patches: list = get_all_patches(patch_type=patch_type)
 
+	# TODO: Datahenge: These should absolutely be Sorted.  First by App (Frappe, ERPNext, Others).  And within each App by Version.
 	for patch in patches:
 		if patch and (patch not in executed):
 			run_patch(patch)
