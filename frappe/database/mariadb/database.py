@@ -346,7 +346,8 @@ class MariaDBDatabase(MariaDBConnectionUtil, MariaDBExceptionUtil, Database):
 			), 0) as 'index',
 			column_key = 'UNI' as 'unique'
 			from information_schema.columns as columns
-			where table_name = '{table_name}' """,
+			where table_name = '{table_name}'
+			AND table_schema = '{frappe.db.cur_db_name}' """,
 			as_dict=1,
 		)
 
