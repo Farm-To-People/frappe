@@ -36,8 +36,10 @@ class DBTable:
 	def sync(self):
 		if self.meta.get("is_virtual"):
 			# no schema to sync for virtual doctypes
+			print(f"Warning: DocType {self.table_name} is virtual; skipping sync()")
 			return
 		if self.is_new():
+			print(f"Creating new SQL table '{self.table_name}' ...")
 			self.create()
 		else:
 			frappe.cache.hdel("table_columns", self.table_name)
