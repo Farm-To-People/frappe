@@ -38,6 +38,31 @@ _redis_queue_conn = None
 
 @lru_cache
 def get_queues_timeout():
+	"""
+	Datahenge: The entire 'common_site_config.json' deserves to have Schema validation.
+    But for now, important to document this: what the new, customized 'workers' key should look like:
+
+	# common_site_config.json
+
+		"workers": {
+			"web_item_qty": {
+				"timeout": 300, 
+				"workers": 1
+			}, 
+			"farm_box": {
+				"timeout": 300, 
+				"workers": 1
+			}, 
+			"email_single": {
+				"timeout": 300, 
+				"workers": 1
+			}, 
+			"email_bulk": {
+				"timeout": 300, 
+				"workers": 1
+			}
+		}
+	"""
 	common_site_config = frappe.get_conf()
 	custom_workers_config = common_site_config.get("workers", {})
 	default_timeout = 300
