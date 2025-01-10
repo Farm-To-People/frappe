@@ -87,7 +87,7 @@ def get_doc(*args, **kwargs):
 		else:
 			raise ValueError('"doctype" is a required key')
 
-	controller = get_controller(doctype)
+	controller = get_controller(doctype)  # pylint: disable=possibly-used-before-assignment
 	if controller:
 		return controller(*args, **kwargs)
 
@@ -1644,7 +1644,7 @@ class Document(BaseDocument):
 
 		return self.get("__onload")[key]
 
-	def queue_action(self, action, **kwargs):
+	def queue_action(self, action: str, **kwargs):
 		"""Run an action in background. If the action has an inner function,
 		like _submit for submit, it will call that instead"""
 		# call _submit instead of submit, so you can override submit to call
@@ -1988,7 +1988,7 @@ class Document(BaseDocument):
 		"""
 		This function analyzes a Parent's child records, and based on CRUD, intelligently calls Child DocType controllers.
 		"""
-		dprint(f"\nEntering 'on_update_children' for DocType '{self.doctype}', Child '{child_docfield_name}'...", debug)
+		frappe.dprint(f"\nEntering 'on_update_children' for DocType '{self.doctype}', Child '{child_docfield_name}'...", force=debug)
 
 		# TODO: Incorporate new method 'determine_save_scenarios'
 
@@ -1998,10 +1998,10 @@ class Document(BaseDocument):
 		if not doc_orig:
 			# Scenario 1: Parent is a new Document, therefore any Child is also new.
 			if not current_child_records:
-				dprint(f"* Scenario 0, New Parent: ({self.doctype}, {self.name}) has no children of DocType '{child_docfield_name}'", debug)
+				frappe.dprint(f"* Scenario 0, New Parent: ({self.doctype}, {self.name}) has no children of DocType '{child_docfield_name}'", force=debug)
 				return
 			for child_record in current_child_records:
-				dprint(f"* Scenario 1, New Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})", debug)
+				frappe.dprint(f"* Scenario 1, New Parent: ({self.doctype}, {self.name}), Child: ({child_record.doctype}, {child_record.name})", force=debug)
 				if hasattr(child_record, 'after_insert'):
 					child_record.after_insert(_parent_doc=self)
 				if hasattr(child_record, 'on_update'):
@@ -2011,12 +2011,12 @@ class Document(BaseDocument):
 		original_child_records = doc_orig.get(child_docfield_name)
 		if (not current_child_records) and (not original_child_records):
 			# Scenario 2: There are no children now, and were not before.  Nothing to analyze.
-			dprint(f"* Scenario 2, Parent had/has no children of DocType {child_docfield_name}", debug)
+			frappe.dprint(f"* Scenario 2, Parent had/has no children of DocType {child_docfield_name}", force=debug)
 			return
 
 		# Scenario 3: Parent is an existing Document, and some Child documents are in play.
-		dprint(f"Quantity child records Before update: {len(original_child_records) or 0}", debug)
-		dprint(f"Quantity child records After update: {len(current_child_records) or 0}", debug)
+		frappe.dprint(f"Quantity child records Before update: {len(original_child_records) or 0}", force=debug)
+		frappe.dprint(f"Quantity child records After update: {len(current_child_records) or 0}", force=debug)
 
 		docs_deleted = [ child_orig for child_orig in original_child_records
 		                 if child_orig.name not in [ child.name for child in current_child_records]
@@ -2025,7 +2025,7 @@ class Document(BaseDocument):
 		if docs_deleted:
 			# Scenario 3A: Pre-existing child documents were Deleted
 			for deleted_doc in docs_deleted:
-				dprint(f"* Scenario 3: Child document of type '{deleted_doc.doctype}' was Deleted.\n", debug)
+				frappe.dprint(f"* Scenario 3: Child document of type '{deleted_doc.doctype}' was Deleted.\n", force=debug)
 				if hasattr(deleted_doc, 'on_trash'):
 					deleted_doc.on_trash(_parent_doc=self)  # call controller method 'on_trash' for this Child record.
 				if hasattr(deleted_doc, 'after_delete'):
@@ -2036,7 +2036,7 @@ class Document(BaseDocument):
 
 			if child_doc.name not in [ child_orig.name for child_orig in original_child_records]:
 				# Scenario 3B: Some child documents were Inserted.
-				dprint(f"* Scenario 4: Child with identifier '{child_doc.name}' was Inserted.", debug)
+				frappe.dprint(f"* Scenario 4: Child with identifier '{child_doc.name}' was Inserted.", force=debug)
 				if hasattr(child_doc, 'after_insert'):
 					child_doc.after_insert(_parent_doc=self)
 				if hasattr(child_doc, 'on_update'):
@@ -2050,13 +2050,13 @@ class Document(BaseDocument):
 
 			if _exist_significant_differences(child_orig, child_doc):
 				# Scenario 2C: Some child document was Modified.
-				dprint(f"* Scenario 5: Child with identifier '{child_doc.name}' was Modified.\n", debug)
+				frappe.dprint(f"* Scenario 5: Child with identifier '{child_doc.name}' was Modified.\n", force=debug)
 				if hasattr(child_doc, 'on_update'):
 					child_doc.on_update(_parent_doc=self)
 				if hasattr(child_doc, 'on_change'):
 					child_doc.on_change(_parent_doc=self)
 			else:
-				dprint(f"* Scenario 6: Child with identifier '{child_doc.name}' was Untouched.\n", debug)
+				frappe.dprint(f"* Scenario 6: Child with identifier '{child_doc.name}' was Untouched.\n", force=debug)
 
 
 	def set_parent_doc(self, _parent_doc=None):
@@ -2249,14 +2249,30 @@ def get_field_differences(doc_before,
                           ignore_modified=True,
 						  ignore_list=None):
 	"""
-	Datahenge: Given 2 documents, compare values, and return a DeepDiff object.
+	Datahenge: Given 2 Documents, compare field values and types, and return a DeepDiff object.
+
+	Version 15 Problem:
+		{
+			'old_type': <class 'int'>,
+			'new_type': <class 'frappe.model.docstatus.DocStatus'>
+			,'old_value': 0,
+			,'new_value': 0}
+		}
 	"""
+	# Unfortunately need to define here, because it's needed in frappe.model.document
 	from deepdiff import DeepDiff
 	from temporal import validate_datatype  # Late Import due to cross-module dependency
 	from ftp.ftp_module.generics import doc_to_stringtyped_dict  # Late Import due to cross-module dependency
 
 	validate_datatype("doc_before", doc_before, Document, True)
 	validate_datatype("doc_after", doc_after, Document, True)
+	if doc_before.doctype != doc_after.doctype:
+		raise ValueError("It's unwise to compare the DocFields of 2 different DocTypes.")
+
+	# frappe.whatis(f"Comparing before and after DocFields for DocType '{doc_before.doctype}'")
+	#  frappe.utils.data.cast_fieldtype
+	#  frappe.utils.data.cast
+
 	before = doc_to_stringtyped_dict(doc_before)
 	after = doc_to_stringtyped_dict(doc_after)
 
@@ -2318,37 +2334,3 @@ def _exist_significant_differences(document1, document2):
 		# print(f"ESD: Significant differences found between 2 documents:\n{significant_differences}")
 		return True
 	return False
-
-
-def dprint(message, enabled=False):
-	"""
-	Datahenge: Quick hack for printing when needed, without fussing with a bunch of comments.
-	"""
-	if enabled:
-		print(message)
-
-# --------
-# Datahenge
-# --------
-
-def get_document_datafield_names(doctype_name, include_child_tables=True):
-	"""
-	Purpose: Given any DocType's name, return the field names that are truly SQL fields.
-	Datahenge: Once again, shocking this isn't part of standard Frappe framework.
-	"""
-	# A bit of syntax explanation: we're merging 2 lists.
-	# The first is tuple 'default_fields' converted to a list.
-	# The second is list comprehension, the DocFields for this DocType that are 'data_fieldtypes'
-	# Finally, sort them.
-
-	result = list(default_fields)
-	result += [ docfield.fieldname for docfield in frappe.get_meta(doctype_name).fields
-	            if docfield.fieldtype in data_fieldtypes]
-
-	# Although a "Table" is not actually a SQL column, it's commonly passed as part of a JSON payload
-	# when calling REST APIs.  Since that's what I designed this for, it's good to include them by default.
-	if include_child_tables:
-		result += [ docfield.fieldname for docfield in frappe.get_meta(doctype_name).fields
-					if docfield.fieldtype in table_fields]
-
-	return sorted(result)

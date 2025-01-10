@@ -86,7 +86,7 @@ def getdate(
 	Converts string date (yyyy-mm-dd) to datetime.date object.
 	If no input is provided, current date is returned.
 	"""
-	# Datahenge:  This ^ is a terrible default behavior.
+	# Datahenge:  This ^ is a very dangerous default behavior that causes many headaches
 
 	# Datahenge: Hotfix because some function (unknown) is passing a string 'null', which won't parse
 	if string_date and isinstance(string_date, str) and string_date == 'null':
