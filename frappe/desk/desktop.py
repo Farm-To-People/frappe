@@ -422,13 +422,17 @@ def get_workspace_sidebar_items():
 	# adding None to allowed_domains to include pages without domain restriction
 	allowed_domains = [None, *frappe.get_active_domains()]
 
-	filters = {
-		"restrict_to_domain": ["in", allowed_domains],
-		"module": ["not in", blocked_modules],
-	}
-
 	if has_access:
-		filters = []
+		filters = {}
+	else:
+		filters = {
+			"restrict_to_domain": ["in", allowed_domains],
+			"module": ["not in", blocked_modules],
+		}
+
+	# Datahenge: I needed a way to simple block whatever Workspace from the sidebar, without limitations.
+	ftp_blocked_workspaces = [ "Projects", "Manufacturing", "Assets" ]
+	filters["name"] = ["not in", ftp_blocked_workspaces]
 
 	# pages sorted based on sequence id
 	order_by = "sequence_id asc"
