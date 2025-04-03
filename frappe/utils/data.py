@@ -1910,7 +1910,6 @@ def sanitize_column(column_name: str) -> None:
 	import sqlparse
 
 	from frappe import _
-
 	column_name = sqlparse.format(column_name, strip_comments=True, keyword_case="lower")
 	if frappe.db and frappe.db.db_type == "mariadb":
 		# strip mariadb specific comments which are like python single line comments

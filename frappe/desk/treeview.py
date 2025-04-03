@@ -43,7 +43,8 @@ def get_children(doctype, parent="", **filters):
 
 def _get_children(doctype, parent="", ignore_permissions=False):
 	parent_field = "parent_" + frappe.scrub(doctype)
-	filters = [[f"COALESCE(`{parent_field}`,'')", "=", parent], ["docstatus", "<", 2]]
+	filters = [[f"ifnull(`{parent_field}`,'')", "=", parent], ["docstatus", "<", 2]]
+
 
 	meta = frappe.get_meta(doctype)
 
