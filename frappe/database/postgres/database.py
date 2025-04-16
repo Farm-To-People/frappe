@@ -1,8 +1,8 @@
 import re
 
-import psycopg2
-import psycopg2.extensions
-from psycopg2.errorcodes import (
+import psycopg
+# import psycopg.extensions
+from psycopg.errorcodes import (
 	CLASS_INTEGRITY_CONSTRAINT_VIOLATION,
 	DEADLOCK_DETECTED,
 	DUPLICATE_COLUMN,
@@ -12,15 +12,15 @@ from psycopg2.errorcodes import (
 	UNDEFINED_TABLE,
 	UNIQUE_VIOLATION,
 )
-from psycopg2 import InterfaceError
+from psycopg import InterfaceError
 # Datahenge: Not sure why these are not importing.  :/
-from psycopg2.errors import (
+from psycopg.errors import (
 	LockNotAvailable,
 	ReadOnlySqlTransaction,
 	SequenceGeneratorLimitExceeded,
 	SyntaxError,
 )
-from psycopg2.extensions import ISOLATION_LEVEL_REPEATABLE_READ, ISOLATION_LEVEL_READ_COMMITTED
+from psycopg.IsolationLevel import ISOLATION_LEVEL_REPEATABLE_READ, ISOLATION_LEVEL_READ_COMMITTED
 
 import frappe
 from frappe.database.database import Database
@@ -29,13 +29,13 @@ from frappe.database.utils import EmptyQueryValues, LazyDecode
 from frappe.utils import cstr, get_table_name
 
 # cast decimals as floats
-DEC2FLOAT = psycopg2.extensions.new_type(
-	psycopg2.extensions.DECIMAL.values,
-	"DEC2FLOAT",
-	lambda value, curs: float(value) if value is not None else None,
-)
+#DEC2FLOAT = psycopg.extensions.new_type(
+#	psycopg.extensions.DECIMAL.values,
+#	"DEC2FLOAT",
+#	lambda value, curs: float(value) if value is not None else None,
+#)
 
-psycopg2.extensions.register_type(DEC2FLOAT)
+# psycopg.extensions.register_type(DEC2FLOAT)
 
 LOCATE_SUB_PATTERN = re.compile(r"locate\(([^,]+),([^)]+)(\)?)\)", flags=re.IGNORECASE)
 LOCATE_QUERY_PATTERN = re.compile(r"locate\(", flags=re.IGNORECASE)
@@ -44,13 +44,13 @@ FROM_TAB_PATTERN = re.compile(r"from tab([\w-]*)", flags=re.IGNORECASE)
 
 
 class PostgresExceptionUtil:
-	ProgrammingError = psycopg2.ProgrammingError
-	TableMissingError = psycopg2.ProgrammingError
-	OperationalError = psycopg2.OperationalError
-	InternalError = psycopg2.InternalError
-	SQLError = psycopg2.ProgrammingError
-	DataError = psycopg2.DataError
-	InterfaceError = psycopg2.InterfaceError
+	ProgrammingError = psycopg.ProgrammingError
+	TableMissingError = psycopg.ProgrammingError
+	OperationalError = psycopg.OperationalError
+	InternalError = psycopg.InternalError
+	SQLError = psycopg.ProgrammingError
+	DataError = psycopg.DataError
+	InterfaceError = psycopg.InterfaceError
 	SequenceGeneratorLimitExceeded = SequenceGeneratorLimitExceeded
 
 	@staticmethod
@@ -59,8 +59,7 @@ class PostgresExceptionUtil:
 
 	@staticmethod
 	def is_timedout(e):
-		# http://initd.org/psycopg/docs/extensions.html?highlight=datatype#psycopg2.extensions.QueryCanceledError
-		return isinstance(e, (psycopg2.extensions.QueryCanceledError | LockNotAvailable))
+		return isinstance(e, (psycopg.errors.CancellationTimeout | LockNotAvailable))
 
 	@staticmethod
 	def is_read_only_mode_error(e) -> bool:
@@ -186,9 +185,9 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 
 	def get_connection(self):
 		conn_settings = self.get_connection_settings()
-		# Must reduce the dictionary to only Keys that pyscopg2 expects:
+		# Must reduce the dictionary to only Keys that psycopg expects:
 		conn_settings = { key:value for key, value in conn_settings.items() if key in ("host", "port", "dbname", "user", "password") }
-		conn = psycopg2.connect(**conn_settings)
+		conn = psycopg.connect(**conn_settings)
 		# Datahenge: Hard coding this is a bad idea.  Either obey the Database defaults.  Or make this an editable config (file, doctype, etc)
 		# Also, Repeatable Read appears to be too string.  Getting too many errors in the ERP.
 		# conn.set_isolation_level(ISOLATION_LEVEL_REPEATABLE_READ)
@@ -198,6 +197,7 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 	def set_execution_timeout(self, seconds: int):
 		# Postgres expects milliseconds as input
 		self.sql("set local statement_timeout = %s", int(seconds) * 1000)
+
 
 	@staticmethod
 	def escape(s, percent=True):
@@ -216,7 +216,8 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 
 		s = s.encode("utf-8")
 
-		return str(psycopg2.extensions.QuotedString(s))
+		# Return the string enclosed in single quotes. Any single quote appearing in the string is escaped by doubling it according to SQL string constants syntax. Backslashes are escaped too.
+		return str(psycopg.extensions.QuotedString(s))
 
 	def get_database_size(self):
 		"""'Returns database size in MB"""
@@ -267,11 +268,11 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 	# column type
 	@staticmethod
 	def is_type_number(code):
-		return code == psycopg2.NUMBER
+		return code == psycopg.NUMBER
 
 	@staticmethod
 	def is_type_datetime(code):
-		return code == psycopg2.DATETIME
+		return code == psycopg.DATETIME
 
 	def rename_table(self, old_name: str, new_name: str) -> list | tuple:
 		old_name = get_table_name(old_name)

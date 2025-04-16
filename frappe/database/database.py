@@ -42,8 +42,8 @@ from frappe.database.datahenge import SQLTransaction  # Datahenge
 from frappe.model.meta import get_default_df  # Datahenge
 
 if TYPE_CHECKING:
-	from psycopg2 import connection as PostgresConnection
-	from psycopg2 import cursor as PostgresCursor
+	from psycopg import connection as PostgresConnection
+	from psycopg import cursor as PostgresCursor
 	from pymysql.connections import Connection as MariadbConnection
 	from pymysql.cursors import Cursor as MariadbCursor
 

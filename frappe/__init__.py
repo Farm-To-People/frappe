@@ -16,7 +16,7 @@ Read the documentation: https://frappeframework.com/docs
 import copy
 import faulthandler
 import functools
-import gc
+# import gc   # Datahenge: Disabling so I can try PyPY.
 import importlib
 import inspect
 import json
@@ -94,7 +94,8 @@ STANDARD_USERS = ("Guest", "Administrator")
 
 _qb_patched = {}
 _dev_server = int(sbool(os.environ.get("DEV_SERVER", False)))
-_tune_gc = bool(sbool(os.environ.get("FRAPPE_TUNE_GC", True)))
+# _tune_gc = bool(sbool(os.environ.get("FRAPPE_TUNE_GC", True)))
+_tune_gc = False
 
 if _dev_server:
 	# warnings.simplefilter("always", DeprecationWarning)
@@ -2553,6 +2554,8 @@ def _register_fault_handler():
 
 from frappe.utils.error import log_error
 
+# Datahenge: Disabling so I can try PyPy
+'''
 if _tune_gc:
 	# generational GC gets triggered after certain allocs (g0) which is 700 by default.
 	# This number is quite small for frappe where a single query can potentially create 700+
@@ -2561,6 +2564,7 @@ if _tune_gc:
 	# everything else.
 	g0, g1, g2 = gc.get_threshold()  # defaults are 700, 10, 10.
 	gc.set_threshold(g0 * 10, g1 * 2, g2 * 2)
+'''
 
 # Remove references to pattern that are pre-compiled and loaded to global scopes.
 re.purge()
