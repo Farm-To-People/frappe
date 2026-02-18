@@ -181,7 +181,7 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 			"dbname": self.cur_db_name,
 			"schema": "public",
 			"user": self.user,
-			"password": self.password,
+			"password": self.password
 		}
 
 	def get_connection(self):
@@ -244,16 +244,25 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		return self.last_query
 
 	def get_tables(self, cached=True):
-		return [
-			d[0]
-			for d in self.sql(
-				"""select table_name
-			from information_schema.tables
-			where table_catalog='{}'
-				and table_type = 'BASE TABLE'
-				and table_schema='{}'""".format(self.cur_db_name, frappe.conf.get("db_schema", "public"))
-			)
-		]
+		"""Returns list of tables with Redis caching (mirrors MariaDB behaviour)."""
+		to_query = not cached
+
+		if cached:
+			tables = frappe.cache.get_value("db_tables")
+			to_query = not tables
+
+		if to_query:
+			schema = frappe.conf.get("db_schema", "public")
+			tables = [
+				d[0]
+				for d in self.sql(
+					"SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = %(schema)s",
+					values={"schema": schema},
+				)
+			]
+			frappe.cache.set_value("db_tables", tables)
+
+		return tables
 
 	def format_date(self, date):
 		if not date:
@@ -503,25 +512,15 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		return query.run(as_dict=True)
 
 	def sql_table_exists(self, sql_table_name: str) -> bool:
-		"""
-		Does a table exist in the Postgres database?
-		"""
-
-		query = """	SELECT table_name FROM information_schema.tables
-			WHERE table_catalog = %(cur_db_name)s
-			AND table_type = 'BASE TABLE'
-			AND table_schema = %(cur_db_schema)s
-			AND table_name = %(sql_table_name)s
-		"""
-
-		filters = {
-			"cur_db_name": self.cur_db_name,
-			"cur_db_schema": frappe.conf.get("db_schema", "public"),
-			"sql_table_name": sql_table_name
-		}
+		"""Check table existence using to_regclass() for fast catalog lookup."""
+		schema = frappe.conf.get("db_schema", "public")
+		qualified_name = f"{schema}.{sql_table_name}"
 		try:
-			result = self.sql(query, values=filters)
-			return bool(result and result[0])
+			result = self.sql(
+				"SELECT to_regclass(%(table)s) IS NOT NULL",
+				values={"table": qualified_name},
+			)
+			return bool(result and result[0][0])
 		except Exception as ex:
 			print(f"Error in PostgresDatabase.table_exists() : {ex}")
 			return False
