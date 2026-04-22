@@ -848,21 +848,9 @@ class DatabaseQuery:
 
 			elif f.operator.lower() == "is":
 				if f.value == "set":
-					f.operator = "!="
-					# Value can technically be null, but comparing with null will always be falsy
-					# Not using coalesce here is faster because indexes can be used.
-					# null != '' -> null ~ falsy
-					# '' != '' -> false
-					can_be_null = False
+					return f"({column_name} IS NOT NULL AND {column_name} != '')"
 				elif f.value == "not set":
-					f.operator = "="
-					fallback = "''"
-					can_be_null = True
-
-				value = ""
-
-				if can_be_null and "ifnull" not in column_name.lower():
-					column_name = f"ifnull({column_name}, {fallback})"
+					return f"({column_name} IS NULL OR {column_name} = '')"
 
 			elif df and df.fieldtype == "Date":
 				value = frappe.db.format_date(f.value)
